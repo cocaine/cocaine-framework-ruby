@@ -16,7 +16,8 @@ class ServiceTest < Test::Unit::TestCase
       locator = Cocaine::Locator.new
       connection = locator.resolve('node')
       connection.callback { |endpoint, version, api|
-        assert_equal(['3hren.dev.yandex.net', 49667], endpoint)
+        assert_true(endpoint[0].is_a?(String))
+        assert_true(1024 <= endpoint[1] && endpoint[1] <= 65535)
         assert_equal(1, version)
         assert_equal({0=>'start_app',1 => 'pause_app', 2 => 'list'}, api)
         EventMachine.stop()
