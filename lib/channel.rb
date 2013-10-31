@@ -2,11 +2,13 @@ require_relative 'namespace'
 
 class Cocaine::Channel
   def initialize
+    @state = :opened
+
     @pending = []
     @errors = []
+
     @callbacks = []
     @errbacks = []
-    @state = :opened
   end
 
   def callback(&block)
@@ -52,12 +54,12 @@ class Cocaine::Channel
   end
 
   :private
-  def do_trigger(collection, entities, entity)
-    if collection.empty?
+  def do_trigger(callbacks, entities, entity)
+    if callbacks.empty?
       entities ||= []
       entities.push entity
     else
-      collection.each do |callback|
+      callbacks.each do |callback|
         callback.call entity
       end
     end
