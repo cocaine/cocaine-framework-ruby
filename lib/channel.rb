@@ -2,8 +2,6 @@ require_relative 'namespace'
 
 class Cocaine::Channel
   def initialize
-    @state = :opened
-
     @pending = []
     @errors = []
 
@@ -30,17 +28,6 @@ class Cocaine::Channel
   end
 
   def close
-    @callbacks.each do |callback|
-      until @pending.empty?
-        callback.call @pending.pop
-      end
-    end
-
-    @errbacks.each do |errback|
-      until @errors.empty?
-        errback.call @errors.pop
-      end
-    end
   end
 
   :private
