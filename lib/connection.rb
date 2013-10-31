@@ -13,7 +13,7 @@ $log.level = Logger::DEBUG
 class Cocaine::Decoder
   def feed(data, &block)
     @decoder ||= MessagePack::Unpacker.new
-    @decoder.feed(data) do |decoded|
+    @decoder.feed_each(data) do |decoded|
       block.call decoded
     end
   end
