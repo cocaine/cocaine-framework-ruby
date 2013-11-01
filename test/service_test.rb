@@ -21,8 +21,7 @@ class ServiceTest < Test::Unit::TestCase
         assert_equal(1, version)
         assert_equal({0=>'start_app',1 => 'pause_app', 2 => 'list'}, api)
         EventMachine.stop()
-      }
-      connection.errback { |errno, reason|
+      }.errback { |errno, reason|
         fail("[#{errno}] #{reason}")
         EventMachine.stop()
       }
