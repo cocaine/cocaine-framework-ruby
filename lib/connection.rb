@@ -1,7 +1,7 @@
 require 'logger'
 require 'eventmachine'
 
-require_relative 'channel'
+require_relative 'channel_manager'
 require_relative 'namespace'
 require_relative 'protocol'
 require_relative 'decoder'
@@ -18,8 +18,7 @@ class Cocaine::Connection < EventMachine::Connection
     @decoder = decoder || Cocaine::Decoder.new
     @state = :connecting
 
-    @counter = 0
-    @channels = {}
+    @channels = Cocaine::ChannelManager.new
   end
 
   def post_init
@@ -47,10 +46,9 @@ class Cocaine::Connection < EventMachine::Connection
 
   def invoke(method_id, *data)
     $log.debug("invoking #{method_id} with #{data}")
-    @counter += 1
-    channel = Cocaine::Channel.new
-    message = MessagePack::pack([method_id, @counter, data])
+    session, channel = @channels.create
+    message = MessagePack::pack([method_id, session, data])
     send_data message
-    @channels[@counter] = channel
+    channel
   end
 end
