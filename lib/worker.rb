@@ -1,0 +1,2 @@
+class Cocaine::Worker
+end
