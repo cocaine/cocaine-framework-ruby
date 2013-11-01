@@ -36,6 +36,9 @@ class Cocaine::Channel
     @state = :closed
   end
 
+  def collect
+  end
+
   :private
   def register_callback(callbacks, entities, block)
     raise IllegalStateError unless @state == :opened

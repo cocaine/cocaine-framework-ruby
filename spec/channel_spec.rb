@@ -75,4 +75,8 @@ describe Cocaine::Channel do
     expect { channel.callback {} }.to raise_error IllegalStateError
   end
 
+  it 'should have `collect` method' do
+    Cocaine::Channel.new.collect
+  end
+
 end
