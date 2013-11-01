@@ -1,3 +1,5 @@
+require 'eventmachine'
+
 require_relative 'namespace'
 
 class IllegalStateError < StandardError
@@ -34,9 +36,29 @@ class Cocaine::Channel
 
   def close
     @state = :closed
+    check_and_trigger_collector
+  end
+
+  :private
+  def check_and_trigger_collector
+    if @collector
+      trigger_collector
+    end
+  end
+
+  :private
+  def trigger_collector
+    if @errors.length == 1
+      @collector.fail *@errors
+    else
+      @collector.succeed @pending.concat(@errors)
+    end
   end
 
   def collect
+    raise IllegalStateError if @state == :closed
+    raise IllegalStateError.new 'only one collector can be bound to the channel' if @collector
+    @collector ||= EM::DefaultDeferrable.new
   end
 
   :private

@@ -74,9 +74,52 @@ describe Cocaine::Channel do
     channel.close
     expect { channel.callback {} }.to raise_error IllegalStateError
   end
+end
 
+describe Cocaine::Channel, '#collect' do
   it 'should have `collect` method' do
     Cocaine::Channel.new.collect
   end
 
+  it 'should return all collected chunks after closing' do
+    flag = false
+    ch = Cocaine::Channel.new
+    ch.trigger 'chunk'
+    ch.trigger 'chmod'
+    ch.trigger 'chang'
+    df = ch.collect
+    df.callback { |chunks|
+      expect(chunks).to eq(%w(chunk chmod chang))
+      flag = true
+    }
+    ch.close
+    expect(flag).to be true
+  end
+
+  it 'should return all collected errors after closing' do
+    flag = false
+    ch = Cocaine::Channel.new
+    ch.error Exception.new 123
+    ch.error Exception.new 456
+    df = ch.collect
+    df.callback { |errors|
+      expect(errors).to eq([Exception.new(123), Exception.new(456)])
+      flag = true
+    }
+    ch.close
+    expect(flag).to be true
+  end
+
+  it 'should fail and return error if only one error comes' do
+    flag = false
+    ch = Cocaine::Channel.new
+    ch.error Exception.new 123
+    df = ch.collect
+    df.errback { |errors|
+      expect(errors).to eq(Exception.new(123))
+      flag = true
+    }
+    ch.close
+    expect(flag).to be true
+  end
 end
