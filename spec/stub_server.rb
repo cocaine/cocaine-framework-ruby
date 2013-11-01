@@ -2,6 +2,10 @@ require 'eventmachine'
 
 class StubServer
   module Server
+    def on_connect(&block)
+      @on_connect = block
+    end
+
     def callback(&block)
       @callback = block
     end
@@ -24,9 +28,16 @@ class StubServer
     host = options[:host]
     port = options[:port]
     @sig = EventMachine::start_server(host, port, Server) do |server|
+      if @on_connect
+        @on_connect.call
+      end
       server.callback &@callback
       server.response = options[:response]
     end
+  end
+
+  def on_connect(&block)
+    @on_connect ||= block
   end
 
   def on_receive(&block)
