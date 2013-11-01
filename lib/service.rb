@@ -9,25 +9,93 @@ require_relative 'channel'
 require_relative 'protocol'
 
 
+class Object
+  def metaclass
+    class << self
+      self
+    end
+  end
+end
+
+
 $log = Logger.new(STDOUT)
 $log.level = Logger::DEBUG
 
 
-class Cocaine::Locator
+class Cocaine::AbstractService
+  def initialize(name)
+    @name = name
+  end
+
+  :private
+  def connect_to_endpoint(*endpoint)
+    df = EM::DefaultDeferrable.new
+    @conn ||= EM.connect *endpoint, Cocaine::Connection do |conn|
+      $log.debug "connection established with service '#{@name}' at #{endpoint}"
+      if conn.error?
+        df.fail conn.error?
+      else
+        df.succeed
+      end
+    end
+    df
+  end
+
+  def invoke(method_id, *args)
+    $log.debug "invoking '#{@name}' method #{method_id} with #{args}"
+    EM::DefaultDeferrable.new
+  end
+end
+
+
+class Cocaine::Locator < Cocaine::AbstractService
   def initialize(host='localhost', port=10053)
+    @name = 'locator'
     @host = host
     @port = port
   end
 
   def resolve(name)
+    df = EventMachine::DefaultDeferrable.new
+    connect_df = connect_to_endpoint @host, @port
+    connect_df.callback { do_resolve name, df }
+    connect_df.errback { |err| df.fail err }
+    df
+  end
+
+  :private
+  def do_resolve(name, df)
+    $log.debug "resolving service '#{name}'"
+    channel = @conn.invoke 0, name
+    channel.callback { |result| df.succeed result }
+    channel.errback { |err| df.fail err }
+  end
+end
+
+
+class Cocaine::Service < Cocaine::AbstractService
+  def connect
     deferred = EventMachine::DefaultDeferrable.new
-    decoder = Cocaine::Decoder.new
-    EventMachine.connect @host, @port, Cocaine::Connection, decoder do |conn|
-      $log.debug "resolving service '#{name}'"
-      channel = conn.invoke 0, name
-      channel.callback { |result| deferred.succeed result }
-      channel.errback { |err| deferred.fail err }
-    end
+    locator = Cocaine::Locator.new
+    d = locator.resolve @name
+    d.callback { |result| on_connect result, deferred }
     deferred
+  end
+
+  :private
+  def on_connect(result, df)
+    $log.debug "service '#{@name}' resolved: #{result}"
+
+    # Parse locator response
+    endpoint, version, api = result
+    api.each do |id, name|
+      self.metaclass.send(:define_method, name) do |*args|
+        invoke id, *args
+      end
+    end
+
+    connect_df = connect_to_endpoint *endpoint
+    connect_df.callback { df.succeed }
+    connect_df.errback { |err| df.fail err }
   end
 end

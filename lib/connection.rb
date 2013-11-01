@@ -21,11 +21,18 @@ end
 
 
 class Cocaine::Connection < EventMachine::Connection
-  def initialize(decoder)
-    @decoder = decoder
+  attr_reader :state
+
+  def initialize(decoder=nil)
+    @decoder = decoder || Cocaine::Decoder.new
+    @state = :connecting
 
     @counter = 0
     @channels = {}
+  end
+
+  def post_init
+    @state = :connected
   end
 
   def receive_data(data)

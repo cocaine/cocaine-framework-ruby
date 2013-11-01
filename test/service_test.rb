@@ -28,4 +28,17 @@ class ServiceTest < Test::Unit::TestCase
       }
     end
   end
+
+  def test_service
+    EventMachine.run do
+       service = Cocaine::Service.new 'node'
+       d = service.connect
+       d.callback {
+         service.list do |r|
+             puts "result=#{r}"
+         end
+         EventMachine.stop()
+       }
+    end
+  end
 end
