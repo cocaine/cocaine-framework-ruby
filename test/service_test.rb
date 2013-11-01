@@ -35,7 +35,7 @@ class ServiceTest < Test::Unit::TestCase
       service = Cocaine::Service.new 'node'
       d = service.connect
       d.callback {
-        service.list.callback { |r|
+        service.list.callback {
           flag = true
           EventMachine.stop()
         }.errback { |err|
