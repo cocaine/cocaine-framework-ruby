@@ -75,11 +75,11 @@ end
 
 class Cocaine::Service < Cocaine::AbstractService
   def connect
-    deferred = EventMachine::DefaultDeferrable.new
+    df = EventMachine::DefaultDeferrable.new
     locator = Cocaine::Locator.new
     d = locator.resolve @name
-    d.callback { |result| on_connect result, deferred }
-    deferred
+    d.callback { |result| on_connect result, df }
+    df
   end
 
   :private
