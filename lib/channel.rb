@@ -38,6 +38,8 @@ class Cocaine::Channel
 
   :private
   def register_callback(callbacks, entities, block)
+    raise IllegalStateError unless @state == :opened
+
     until entities.empty?
       block.call entities.pop
     end

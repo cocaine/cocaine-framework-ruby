@@ -69,4 +69,10 @@ describe Cocaine::Channel do
     expect { channel.trigger nil }.to raise_error IllegalStateError
   end
 
+  it 'should raise error when adding callback after is was closed' do
+    channel = Cocaine::Channel.new
+    channel.close
+    expect { channel.callback {} }.to raise_error IllegalStateError
+  end
+
 end
