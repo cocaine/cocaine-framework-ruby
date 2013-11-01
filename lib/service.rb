@@ -43,7 +43,7 @@ class Cocaine::AbstractService
 
   def invoke(method_id, *args)
     $log.debug "invoking '#{@name}' method #{method_id} with #{args}"
-    EM::DefaultDeferrable.new
+    @conn.invoke method_id, *args
   end
 end
 
@@ -66,7 +66,7 @@ class Cocaine::Locator < Cocaine::AbstractService
   :private
   def do_resolve(name, df)
     $log.debug "resolving service '#{name}'"
-    channel = @conn.invoke 0, name
+    channel = invoke 0, name
     channel.callback { |result| df.succeed result }
     channel.errback { |err| df.fail err }
   end
@@ -88,6 +88,8 @@ class Cocaine::Service < Cocaine::AbstractService
 
     # Parse locator response
     endpoint, version, api = result
+    $log.debug "protocol version: #{version}"
+
     api.each do |id, name|
       self.metaclass.send(:define_method, name) do |*args|
         invoke id, *args

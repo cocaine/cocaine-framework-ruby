@@ -46,6 +46,7 @@ class Cocaine::Connection < EventMachine::Connection
         when RPC::ERROR
           channel.error [msg.errno, msg.reason]
         when RPC::CHOKE
+          channel.error msg
           channel.close
         else
           raise "unexpected message id: #{id}"
@@ -53,11 +54,11 @@ class Cocaine::Connection < EventMachine::Connection
     end
   end
 
-  def invoke(method_id, data)
-    $log.debug("invoking #{method_id} with ['#{data}']")
+  def invoke(method_id, *data)
+    $log.debug("invoking #{method_id} with #{data}")
     @counter += 1
     channel = Cocaine::Channel.new
-    message = MessagePack::pack([method_id, @counter, [data]])
+    message = MessagePack::pack([method_id, @counter, data])
     send_data message
     @channels[@counter] = channel
   end

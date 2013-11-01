@@ -30,15 +30,20 @@ class ServiceTest < Test::Unit::TestCase
   end
 
   def test_service
+    flag = false
     EventMachine.run do
-       service = Cocaine::Service.new 'node'
-       d = service.connect
-       d.callback {
-         service.list do |r|
-             puts "result=#{r}"
-         end
-         EventMachine.stop()
-       }
+      service = Cocaine::Service.new 'node'
+      d = service.connect
+      d.callback {
+        service.list.callback { |r|
+          flag = true
+          EventMachine.stop()
+        }.errback { |err|
+          puts "error: #{err}"
+          EventMachine.stop()
+        }
+      }
     end
+    assert_true flag
   end
 end
