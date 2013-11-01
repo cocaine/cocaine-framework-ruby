@@ -1,0 +1,3 @@
+require 'version'
+
+require 'namespace'
