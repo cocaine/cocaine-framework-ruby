@@ -4,20 +4,11 @@ require 'eventmachine'
 require_relative 'channel'
 require_relative 'namespace'
 require_relative 'protocol'
+require_relative 'decoder'
 
 
 $log = Logger.new(STDOUT)
 $log.level = Logger::DEBUG
-
-
-class Cocaine::Decoder
-  def feed(data, &block)
-    @decoder ||= MessagePack::Unpacker.new
-    @decoder.feed_each(data) do |decoded|
-      block.call decoded
-    end
-  end
-end
 
 
 class Cocaine::Connection < EventMachine::Connection
