@@ -1,7 +1,12 @@
 require_relative 'namespace'
 
+class IllegalStateError < StandardError
+end
+
 class Cocaine::Channel
   def initialize
+    @state = :opened
+
     @pending = []
     @errors = []
 
@@ -28,6 +33,7 @@ class Cocaine::Channel
   end
 
   def close
+    @state = :closed
   end
 
   :private
@@ -42,6 +48,8 @@ class Cocaine::Channel
 
   :private
   def do_trigger(callbacks, entities, entity)
+    raise IllegalStateError unless @state == :opened
+
     if callbacks.empty?
       entities ||= []
       entities.push entity

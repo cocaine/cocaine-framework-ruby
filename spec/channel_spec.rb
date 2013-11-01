@@ -8,7 +8,7 @@ describe Cocaine::Channel do
     channel = Cocaine::Channel.new
     channel.trigger 'actual'
     channel.callback { |data|
-      expect(data).to eq('actual')
+      expect(data).to be == 'actual'
       done = true
     }
     done.should == true
@@ -19,7 +19,7 @@ describe Cocaine::Channel do
     channel = Cocaine::Channel.new
     channel.error 'actual'
     channel.errback { |data|
-      expect(data).to eq('actual')
+      expect(data).to be == 'actual'
       done = true
     }
     done.should == true
@@ -29,7 +29,7 @@ describe Cocaine::Channel do
     done = false
     channel = Cocaine::Channel.new
     channel.callback { |data|
-      expect(data).to eq('actual')
+      expect(data).to be == 'actual'
       done = true
     }
     channel.trigger 'actual'
@@ -40,7 +40,7 @@ describe Cocaine::Channel do
     done = false
     channel = Cocaine::Channel.new
     channel.errback { |data|
-      expect(data).to eq('actual')
+      expect(data).to be == 'actual'
       done = true
     }
     channel.error 'actual'
@@ -55,12 +55,18 @@ describe Cocaine::Channel do
     channel.trigger 'actual'
 
     channel.callback { |data|
-      expect(data).to eq('actual')
+      expect(data).to be == 'actual'
       counter += 1
     }
     channel.close
 
-    counter.should == 2
+    expect counter == 2
+  end
+
+  it 'should raise error when triggered after it was closed' do
+    channel = Cocaine::Channel.new
+    channel.close
+    expect { channel.trigger nil }.to raise_error IllegalStateError
   end
 
 end
