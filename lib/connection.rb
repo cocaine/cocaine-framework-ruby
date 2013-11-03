@@ -17,8 +17,10 @@ class Cocaine::Connection < EventMachine::Connection
   def initialize(decoder=nil)
     @decoder = decoder || Cocaine::Decoder.new
     @state = :connecting
-
     @channels = Cocaine::ChannelManager.new
+    # Maybe introduce another abstraction - Dispatcher. It will handle `channels` and process every unpacked message.
+    # dispatcher.process(msg) - polymorphicly process messages.
+    # channel <- dispatcher.send id, *data - create message, pack and send
   end
 
   def post_init
@@ -31,6 +33,10 @@ class Cocaine::Connection < EventMachine::Connection
       $log.debug "received: #{msg}"
       channel = @channels[session]
       case msg.id
+        # when RPC::HANDSHAKE
+        # when RPC::HEARTBEAT
+        # when RPC::TERMINATE
+        # when RPC::INVOKE
         when RPC::CHUNK
           channel.trigger msg.data
         when RPC::ERROR

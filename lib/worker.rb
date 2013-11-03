@@ -16,6 +16,9 @@ class Cocaine::Worker
     $log.debug "connecting to the #{@endpoint}"
     EM.connect @endpoint, nil, Cocaine::Connection do |conn|
       @conn ||= conn
+      # Activate health manager
+      ## Send handshake
+      ## Send heartbeat
     end
   end
 end
