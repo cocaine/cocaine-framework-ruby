@@ -1,4 +1,5 @@
 require 'connection'
+require 'cocaine/health'
 
 $log = Logger.new(STDOUT)
 $log.level = Logger::DEBUG
@@ -16,11 +17,7 @@ class Cocaine::Worker
     $log.debug "connecting to the #{@endpoint}"
     EM.connect @endpoint, nil, Cocaine::Connection do |conn|
       @dispatcher = Cocaine::WorkerDispatcher.new conn
-      # Activate health manager
-      ## Send handshake
-
-      @dispatcher.send_heartbeat 0
-      ## Send heartbeat
+      @health = Cocaine::HealthManager.new @dispatcher
     end
   end
 end
