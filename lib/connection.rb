@@ -93,6 +93,7 @@ class Cocaine::Connection < EventMachine::Connection
   def on_message(&block)
     @on_message = block
   end
+
   def receive_data(raw_data)
     @decoder.feed(raw_data) do |id, session, data|
       message = Cocaine::ProtocolFactory.create(id, data)
