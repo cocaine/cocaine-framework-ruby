@@ -30,8 +30,9 @@ class Cocaine::AbstractService
   :private
   def connect_to_endpoint(*endpoint)
     df = EM::DefaultDeferrable.new
-    @conn ||= EM.connect *endpoint, Cocaine::Connection do |conn|
+    EM.connect *endpoint, Cocaine::Connection do |conn|
       $log.debug "connection established with service '#{@name}' at #{endpoint}"
+      @dispatcher = Cocaine::ClientDispatcher.new conn
       if conn.error?
         df.fail conn.error?
       else
@@ -43,7 +44,7 @@ class Cocaine::AbstractService
 
   def invoke(method_id, *args)
     $log.debug "invoking '#{@name}' method #{method_id} with #{args}"
-    @conn.invoke method_id, *args
+    @dispatcher.invoke method_id, *args
   end
 end
 

@@ -18,7 +18,8 @@ describe Cocaine::Connection do
         arg.call(msg)
       end
       EventMachine.connect '127.0.0.1', 9053, Cocaine::Connection, decoder do |conn|
-        channel = conn.invoke 0, 'bullshit'
+        dispatcher = Cocaine::ClientDispatcher.new conn
+        channel = dispatcher.invoke 0, 'bullshit'
         channel.callback {
           server.stop
           EventMachine::stop
