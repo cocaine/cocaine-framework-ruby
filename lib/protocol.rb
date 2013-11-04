@@ -20,6 +20,15 @@ class Protocol
   def initialize(id)
     @id = id
   end
+
+  def pack(session)
+    [@id, session, data.to_msgpack].to_msgpack
+  end
+
+  :protected
+  def data
+    []
+  end
 end
 
 
