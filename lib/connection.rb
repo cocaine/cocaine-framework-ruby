@@ -32,11 +32,7 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
     channel = @channels[session]
     case message.id
       when RPC::CHUNK
-        data = message.data
-        if data.kind_of?(Array)
-          data = data.join(',')
-        end
-        channel.trigger MessagePack.unpack(data)
+        channel.trigger unpack_chunk message.data
       when RPC::ERROR
         channel.error [message.errno, message.reason]
       when RPC::CHOKE
@@ -53,6 +49,14 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
     message = MessagePack::pack([method_id, session, data])
     @conn.send_data message
     channel
+  end
+
+  :private
+  def unpack_chunk(data)
+    if data.kind_of?(Array)
+      data = data.join(',')
+    end
+    MessagePack.unpack(data)
   end
 end
 
