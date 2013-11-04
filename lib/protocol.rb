@@ -21,6 +21,13 @@ class Protocol
   end
 end
 
+
+class Handshake < Protocol
+  def initialize
+    super(RPC::HANDSHAKE)
+  end
+end
+
 class Chunk < Protocol
   attr_reader :data
 

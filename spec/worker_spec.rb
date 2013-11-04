@@ -15,6 +15,7 @@ describe Cocaine::Worker, '#protocol' do
     EM.run do
       stub = StubServer.new host: '/tmp/cocaine.sock', port: nil
       stub.on_connect {
+        stub.stop
         EM.stop
       }
       worker = Cocaine::Worker.new endpoint: '/tmp/cocaine.sock'
@@ -22,5 +23,16 @@ describe Cocaine::Worker, '#protocol' do
     end
   end
 
-  #it 'should send handshake after connecting to the socket' do
+  it 'should send handshake after connecting to the socket' do
+    EM.run do
+      stub = StubServer.new host: '/tmp/cocaine.sock', port: nil
+      stub.on_receive { |msg|
+        expect(msg).to eq([0, 0, [].to_msgpack].to_msgpack)
+        stub.stop
+        EM.stop
+      }
+      worker = Cocaine::Worker.new endpoint: '/tmp/cocaine.sock'
+      worker.run
+    end
+  end
 end
