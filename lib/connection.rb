@@ -32,7 +32,11 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
     channel = @channels[session]
     case message.id
       when RPC::CHUNK
-        channel.trigger message.data
+        data = message.data
+        if data.kind_of?(Array)
+          data = data.join(',')
+        end
+        channel.trigger MessagePack.unpack(data)
       when RPC::ERROR
         channel.error [message.errno, message.reason]
       when RPC::CHOKE
@@ -62,6 +66,14 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
     # when RPC::CHUNK
     # when RPC::ERROR
     # when RPC::CHOKE
+  end
+
+  def send_heartbeat(session)
+  end
+
+  :private
+  def send(session, message)
+
   end
 end
 

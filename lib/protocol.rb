@@ -12,6 +12,7 @@ module RPC
   CHOKE = 6
 end
 
+
 class Protocol
   attr_reader :id
 
@@ -28,16 +29,13 @@ class Handshake < Protocol
   end
 end
 
+
 class Chunk < Protocol
   attr_reader :data
 
-  def initialize(data)
+  def initialize(*data)
     super(RPC::CHUNK)
-    if data.kind_of?(Array)
-      data = data.join(',')
-    end
-
-    @data = MessagePack.unpack(data)
+    @data = data
   end
 
   def to_s
@@ -45,15 +43,18 @@ class Chunk < Protocol
   end
 end
 
+
 class Error < Protocol
   attr_reader :errno
   attr_reader :reason
 
-  def initialize(data)
+  def initialize(errno, reason)
     super(RPC::ERROR)
-    @errno, @reason = data
+    @errno = errno
+    @reason = reason
   end
 end
+
 
 class Choke < Protocol
   def initialize
@@ -65,13 +66,14 @@ class Choke < Protocol
   end
 end
 
+
 class Cocaine::ProtocolFactory
   def self.create(id, data)
     case id
       when RPC::CHUNK
-        Chunk.new(data)
+        Chunk.new(*data)
       when RPC::ERROR
-        Error.new(data)
+        Error.new(*data)
       when RPC::CHOKE
         Choke.new
       else
