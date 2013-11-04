@@ -73,11 +73,12 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
   end
 
   def send_heartbeat(session)
+    send Handshake.new, session
   end
 
   :private
-  def send(session, message)
-
+  def send(message, session)
+    @conn.send_data message.pack(session)
   end
 end
 

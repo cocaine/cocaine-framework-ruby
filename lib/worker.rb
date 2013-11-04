@@ -15,10 +15,11 @@ class Cocaine::Worker
     $log.debug 'starting worker'
     $log.debug "connecting to the #{@endpoint}"
     EM.connect @endpoint, nil, Cocaine::Connection do |conn|
-      @conn ||= conn
+      @dispatcher = Cocaine::WorkerDispatcher.new conn
       # Activate health manager
       ## Send handshake
-      @conn.send_data [0, 0, [].to_msgpack].to_msgpack
+
+      @dispatcher.send_heartbeat 0
       ## Send heartbeat
     end
   end
