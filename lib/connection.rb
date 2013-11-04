@@ -22,13 +22,7 @@ class Cocaine::Dispatcher
   end
 
   def process(session, message)
-    # when RPC::HANDSHAKE
-    # when RPC::HEARTBEAT
-    # when RPC::TERMINATE
-    # when RPC::INVOKE
-    # when RPC::CHUNK
-    # when RPC::ERROR
-    # when RPC::CHOKE
+    raise NotImplementedError
   end
 end
 
@@ -59,6 +53,19 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
 end
 
 
+class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
+  def process(session, message)
+    # when RPC::HANDSHAKE
+    # when RPC::HEARTBEAT
+    # when RPC::TERMINATE
+    # when RPC::INVOKE
+    # when RPC::CHUNK
+    # when RPC::ERROR
+    # when RPC::CHOKE
+  end
+end
+
+
 class Cocaine::Connection < EventMachine::Connection
   attr_reader :state
 
@@ -71,15 +78,14 @@ class Cocaine::Connection < EventMachine::Connection
     @state = :connected
   end
 
-  def receive_data(data)
-    @decoder.feed(data) do |id, session, data|
+  def on_message(&block)
+    @on_message = block
+  end
+  def receive_data(raw_data)
+    @decoder.feed(raw_data) do |id, session, data|
       message = Cocaine::ProtocolFactory.create(id, data)
       $log.debug "received: #{message}"
       @on_message.call session, message
     end
-  end
-
-  def on_message(&block)
-    @on_message = block
   end
 end
