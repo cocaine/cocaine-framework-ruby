@@ -17,8 +17,8 @@ class Cocaine::Worker
     EM.connect @endpoint, nil, Cocaine::Connection do |conn|
       @conn ||= conn
       # Activate health manager
-      @conn.send_data [0, 0, [].to_msgpack].to_msgpack
       ## Send handshake
+      @conn.send_data [0, 0, [].to_msgpack].to_msgpack
       ## Send heartbeat
     end
   end
