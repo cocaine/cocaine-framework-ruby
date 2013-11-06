@@ -56,6 +56,7 @@ class Cocaine::HealthManager
     @timers[:disown].cancel
   end
 
+  :private
   def exhale
     @timers[:disown].start
     @dispatcher.send_heartbeat 0
