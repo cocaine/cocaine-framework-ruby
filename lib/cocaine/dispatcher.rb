@@ -60,6 +60,7 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
   def initialize(conn)
     super conn
     @health = Cocaine::HealthManager.new self
+    @health.start
   end
 
   def process(session, message)
