@@ -57,8 +57,9 @@ end
 
 
 class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
-  def initialize(conn)
+  def initialize(worker, conn)
     super conn
+    @worker = worker
     @health = Cocaine::HealthManager.new self
     @health.start
   end
@@ -68,7 +69,7 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
       when RPC::HEARTBEAT
         @health.breath()
       when RPC::TERMINATE
-        #send Terminate.new(errno, reason), session
+        @worker.terminate()
       when RPC::INVOKE
         # create channel, request, invoke event in sandbox
       when RPC::CHUNK
@@ -88,6 +89,10 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
 
   def send_heartbeat(session)
     send Heartbeat.new, session
+  end
+
+  def send_terminate(session, errno, reason)
+    send Terminate.new(errno, reason), session
   end
 
   :private

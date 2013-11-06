@@ -20,10 +20,15 @@ class Cocaine::Worker
       $log.debug 'starting worker'
       $log.debug "connecting to the #{@endpoint}"
       EM.connect @endpoint, nil, Cocaine::Connection do |conn|
-        @dispatcher = Cocaine::WorkerDispatcher.new conn
+        @dispatcher = Cocaine::WorkerDispatcher.new self, conn
         @dispatcher.send_handshake 0, @uuid
         @dispatcher.send_heartbeat 0
       end
     end
+  end
+
+  def terminate(errno, reason)
+    $log.debug "terminating with [#{errno}] #{reason}"
+    @dispatcher.send_terminate 0, errno, reason
   end
 end
