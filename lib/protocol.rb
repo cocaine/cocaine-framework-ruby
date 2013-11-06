@@ -34,7 +34,11 @@ end
 
 class Handshake < Protocol
   def initialize
-    super(RPC::HANDSHAKE)
+    super RPC::HANDSHAKE
+  end
+
+  def to_s
+    'Handshake()'
   end
 end
 
@@ -43,6 +47,45 @@ class Heartbeat < Protocol
   def initialize
     super RPC::HEARTBEAT
   end
+
+  def to_s
+    'Heartbeat()'
+  end
+end
+
+
+class Terminate < Protocol
+  def initialize(errno, reason)
+    super RPC::TERMINATE
+    @errno = errno
+    @reason = reason
+  end
+
+  :protected
+  def data
+    [@errno, @reason]
+  end
+
+  def to_s
+    "Terminate(#{@errno}, #{@reason})"
+  end
+end
+
+
+class Invoke < Protocol
+  def initialize(event)
+    super RPC::INVOKE
+    @event = event
+  end
+
+  :protected
+  def data
+    [@event]
+  end
+
+  def to_s
+    "Invoke(#{@event})"
+  end
 end
 
 
@@ -50,8 +93,13 @@ class Chunk < Protocol
   attr_reader :data
 
   def initialize(*data)
-    super(RPC::CHUNK)
+    super RPC::CHUNK
     @data = data
+  end
+
+  :protected
+  def data
+    @data
   end
 
   def to_s
@@ -65,16 +113,25 @@ class Error < Protocol
   attr_reader :reason
 
   def initialize(errno, reason)
-    super(RPC::ERROR)
+    super RPC::ERROR
     @errno = errno
     @reason = reason
+  end
+
+  :protected
+  def data
+    [@errno, @reason]
+  end
+
+  def to_s
+    "Error(#{@errno}, #{reason})"
   end
 end
 
 
 class Choke < Protocol
   def initialize
-    super(RPC::CHOKE)
+    super RPC::CHOKE
   end
 
   def to_s
