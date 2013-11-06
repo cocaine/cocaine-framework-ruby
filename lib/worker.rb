@@ -20,6 +20,7 @@ class Cocaine::Worker
       $log.debug 'starting worker'
       $log.debug "connecting to the #{@endpoint}"
       EM.connect @endpoint, nil, Cocaine::Connection do |conn|
+        $log.debug "connection established with #{@endpoint}"
         @dispatcher = Cocaine::WorkerDispatcher.new self, conn
         @dispatcher.send_handshake 0, @uuid
         @dispatcher.send_heartbeat 0
