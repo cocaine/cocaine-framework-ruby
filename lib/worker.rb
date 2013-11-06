@@ -16,12 +16,14 @@ class Cocaine::Worker
   end
 
   def run
-    $log.debug 'starting worker'
-    $log.debug "connecting to the #{@endpoint}"
-    EM.connect @endpoint, nil, Cocaine::Connection do |conn|
-      @dispatcher = Cocaine::WorkerDispatcher.new conn
-      @dispatcher.send_handshake 0, @uuid
-      @dispatcher.send_heartbeat 0
+    EM.run do
+      $log.debug 'starting worker'
+      $log.debug "connecting to the #{@endpoint}"
+      EM.connect @endpoint, nil, Cocaine::Connection do |conn|
+        @dispatcher = Cocaine::WorkerDispatcher.new conn
+        @dispatcher.send_handshake 0, @uuid
+        @dispatcher.send_heartbeat 0
+      end
     end
   end
 end
