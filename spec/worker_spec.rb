@@ -27,7 +27,7 @@ describe Cocaine::Worker, '#protocol' do
     EM.run do
       stub = StubServer.new host: '/tmp/cocaine.sock', port: nil
       stub.on_receive { |msg|
-        expect(msg).to eq([0, 0, [].to_msgpack].to_msgpack + [1, 0, [].to_msgpack].to_msgpack)
+        expect(msg).to eq([0, 0, [''].to_msgpack].to_msgpack + [1, 0, [].to_msgpack].to_msgpack)
         stub.stop
         EM.stop
       }

@@ -28,7 +28,10 @@ class HeartbeatTimer < Timer
     super timeout
   end
 
-  def start
+  def start(&block)
+    @timer = EM::PeriodicTimer.new @timeout do
+      block.call
+    end
   end
 end
 
@@ -37,8 +40,8 @@ class Cocaine::HealthManager
   attr_accessor :timeouts
 
   def initialize(dispatcher, options={})
-    options = {disown: 10.0, heartbeat: 30.0}.merge options
     @dispatcher = dispatcher
+    options = {disown: 10.0, heartbeat: 30.0}.merge options
     @timers = {
         disown: DisownTimer.new(options[:disown]),
         heartbeat: HeartbeatTimer.new(options[:heartbeat])
@@ -46,13 +49,15 @@ class Cocaine::HealthManager
   end
 
   def start
-    @timers[:disown].start
-    @timers[:heartbeat].start
-    @dispatcher.send_handshake 0
-    @dispatcher.send_heartbeat 0
+    @timers[:heartbeat].start { exhale }
   end
 
   def breath
     @timers[:disown].cancel
+  end
+
+  def exhale
+    @timers[:disown].start
+    @dispatcher.send_heartbeat 0
   end
 end

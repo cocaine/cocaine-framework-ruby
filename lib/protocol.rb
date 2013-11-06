@@ -33,12 +33,17 @@ end
 
 
 class Handshake < Protocol
-  def initialize
+  def initialize(uuid)
     super RPC::HANDSHAKE
+    @uuid = uuid
+  end
+
+  def data
+    [@uuid]
   end
 
   def to_s
-    'Handshake()'
+    "Handshake(#{@uuid})"
   end
 end
 

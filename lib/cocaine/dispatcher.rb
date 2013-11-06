@@ -82,8 +82,8 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
     end
   end
 
-  def send_handshake(session)
-    send Handshake.new, session
+  def send_handshake(session, uuid)
+    send Handshake.new(uuid), session
   end
 
   def send_heartbeat(session)
