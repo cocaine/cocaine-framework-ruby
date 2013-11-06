@@ -47,15 +47,18 @@ class Cocaine::HealthManager
   end
 
   def start
+    $log.debug 'starting health manager'
     @timers[:heartbeat].start { exhale }
   end
 
   def breath
+    $log.debug 'doing breath'
     @timers[:disown].cancel
   end
 
   :private
   def exhale
+    $log.debug 'doing exhale'
     @timers[:disown].start
     @dispatcher.send_heartbeat 0
   end
