@@ -12,11 +12,14 @@ class Cocaine::Worker
     @endpoint = options[:endpoint]
   end
 
+  def on
+  end
+
   def run
     $log.debug 'starting worker'
     $log.debug "connecting to the #{@endpoint}"
     EM.connect @endpoint, nil, Cocaine::Connection do |conn|
-      @dispatcher = Cocaine::WorkerDispatcher.new conn
+      @dispatcher = Cocaine::WorkerDispatcher.new self, conn
       @health = Cocaine::HealthManager.new @dispatcher
     end
   end

@@ -39,6 +39,13 @@ class Handshake < Protocol
 end
 
 
+class Heartbeat < Protocol
+  def initialize
+    super RPC::HEARTBEAT
+  end
+end
+
+
 class Chunk < Protocol
   attr_reader :data
 
@@ -79,6 +86,8 @@ end
 class Cocaine::ProtocolFactory
   def self.create(id, data)
     case id
+      when RPC::HEARTBEAT
+        Heartbeat.new
       when RPC::CHUNK
         Chunk.new(*data)
       when RPC::ERROR

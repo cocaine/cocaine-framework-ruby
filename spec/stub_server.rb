@@ -2,16 +2,19 @@ require 'eventmachine'
 
 class StubServer
   module Server
-    def on_connect(&block)
-      @on_connect = block
-    end
-
     def callback(&block)
       @callback = block
     end
 
+    def on=(on)
+      @on = on
+    end
+
     def receive_data(data)
       @callback.call data if @callback
+      if @on && @on.has_key?(data)
+        @on[data].call self
+      end
       send_data @response
       close_connection_after_writing
     end
@@ -32,6 +35,7 @@ class StubServer
         @on_connect.call
       end
       server.callback &@callback
+      server.on = @on
       server.response = options[:response]
     end
   end
@@ -42,6 +46,11 @@ class StubServer
 
   def on_receive(&block)
     @callback ||= block
+  end
+
+  def on(msg, &block)
+    @on ||= {}
+    @on[msg] = block
   end
 
   def stop

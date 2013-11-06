@@ -56,18 +56,33 @@ end
 
 
 class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
+  def initialize(worker, conn)
+    super conn
+  end
+
   def process(session, message)
-    # when RPC::HANDSHAKE
-    # when RPC::HEARTBEAT
-    # when RPC::TERMINATE
-    # when RPC::INVOKE
-    # when RPC::CHUNK
-    # when RPC::ERROR
-    # when RPC::CHOKE
+    case message.id
+      when RPC::HEARTBEAT
+        @health.breath()
+      when RPC::TERMINATE
+        #send Terminate.new(errno, reason), session
+        pass
+      when RPC::INVOKE
+      when RPC::CHUNK
+      when RPC::ERROR
+      when RPC::CHOKE
+        pass
+      else
+        raise "unexpected message id: #{id}"
+    end
+  end
+
+  def send_handshake(session)
+    send Handshake.new, session
   end
 
   def send_heartbeat(session)
-    send Handshake.new, session
+    send Heartbeat.new, session
   end
 
   :private
