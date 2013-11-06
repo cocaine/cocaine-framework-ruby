@@ -69,10 +69,13 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
       when RPC::TERMINATE
         #send Terminate.new(errno, reason), session
       when RPC::INVOKE
+        # create channel, request, invoke event in sandbox
       when RPC::CHUNK
+        # get channel, push chunk to it
       when RPC::ERROR
+        # get channel, push error to it
       when RPC::CHOKE
-        pass
+        # get channel, push choke to it and close channel
       else
         raise "unexpected message id: #{id}"
     end
