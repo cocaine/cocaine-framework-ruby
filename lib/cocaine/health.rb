@@ -4,4 +4,8 @@ class Cocaine::HealthManager
     @dispatcher.send_handshake 0
     @dispatcher.send_heartbeat 0
   end
+
+  def breath
+    # stop timer
+  end
 end

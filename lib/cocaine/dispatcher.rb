@@ -1,4 +1,5 @@
 require 'protocol'
+require 'cocaine/health'
 require_relative '../channel_manager'
 
 $log = Logger.new(STDOUT)
@@ -56,8 +57,9 @@ end
 
 
 class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
-  def initialize(worker, conn)
+  def initialize(conn)
     super conn
+    @health = Cocaine::HealthManager.new self
   end
 
   def process(session, message)
@@ -66,7 +68,6 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
         @health.breath()
       when RPC::TERMINATE
         #send Terminate.new(errno, reason), session
-        pass
       when RPC::INVOKE
       when RPC::CHUNK
       when RPC::ERROR
