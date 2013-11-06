@@ -37,8 +37,6 @@ end
 
 
 class Cocaine::HealthManager
-  attr_accessor :timeouts
-
   def initialize(dispatcher, options={})
     @dispatcher = dispatcher
     options = {disown: 10.0, heartbeat: 30.0}.merge options
