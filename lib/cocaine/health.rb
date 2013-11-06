@@ -27,6 +27,9 @@ class HeartbeatTimer < Timer
   def initialize(timeout = 30.0)
     super timeout
   end
+
+  def start
+  end
 end
 
 
@@ -43,12 +46,13 @@ class Cocaine::HealthManager
   end
 
   def start
+    @timers[:disown].start
+    @timers[:heartbeat].start
     @dispatcher.send_handshake 0
     @dispatcher.send_heartbeat 0
-    @timers[:disown].start
   end
 
   def breath
-    # stop timer
+    @timers[:disown].cancel
   end
 end
