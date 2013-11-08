@@ -34,6 +34,7 @@ class StubServer
       if @on_connect
         @on_connect.call
       end
+      @server = server
       server.callback &@callback
       server.on = @on
       server.response = options[:response]
