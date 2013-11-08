@@ -1,4 +1,4 @@
-require_relative 'channel'
+require 'cocaine/channel'
 
 class Cocaine::ChannelManager
   def initialize

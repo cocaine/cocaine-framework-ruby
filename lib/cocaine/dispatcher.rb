@@ -1,6 +1,8 @@
 require 'protocol'
 require 'cocaine/health'
-require_relative '../channel_manager'
+require 'cocaine/channel_manager'
+require 'cocaine/server/request'
+require 'cocaine/server/response'
 
 $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
@@ -55,26 +57,6 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
       data = data.join(',')
     end
     MessagePack.unpack(data)
-  end
-end
-
-
-class Cocaine::Request
-  def initialize(channel)
-    @channel = channel
-  end
-
-  def read
-    @channel
-  end
-end
-
-
-class Cocaine::Response
-  def write(data)
-  end
-
-  def close
   end
 end
 

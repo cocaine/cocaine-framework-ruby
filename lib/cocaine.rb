@@ -2,6 +2,6 @@ require 'version'
 
 require 'namespace'
 
-require 'channel'
+require 'cocaine/channel'
 require 'service'
 require 'worker'

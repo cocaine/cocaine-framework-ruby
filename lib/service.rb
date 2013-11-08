@@ -4,8 +4,8 @@ require 'logger'
 require 'msgpack'
 require 'eventmachine'
 
+require 'cocaine/channel'
 require_relative 'connection'
-require_relative 'channel'
 require_relative 'protocol'
 
 

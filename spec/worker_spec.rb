@@ -26,7 +26,7 @@ describe Cocaine::Worker, '#protocol' do
   it 'should send handshake + heartbeat after connecting to the socket' do
     EM.run do
       stub = StubServer.new host: '/tmp/cocaine.sock', port: nil
-      stub.on ([0, 0, ['uuid'].to_msgpack].to_msgpack + [1, 0, [].to_msgpack].to_msgpack) {
+      stub.on ([0, 0, ['uuid']].to_msgpack + [1, 0, []].to_msgpack) {
         stub.stop
         EM.stop
       }

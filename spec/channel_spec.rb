@@ -1,6 +1,6 @@
 require 'rspec'
 
-require_relative '../lib/channel'
+require_relative '../lib/cocaine/channel'
 
 describe Cocaine::Channel do
   it 'should invoke callback immediately if it has pending data' do

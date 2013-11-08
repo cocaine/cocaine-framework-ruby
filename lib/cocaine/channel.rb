@@ -1,6 +1,6 @@
 require 'eventmachine'
 
-require_relative 'namespace'
+require 'namespace'
 
 class IllegalStateError < StandardError
 end
