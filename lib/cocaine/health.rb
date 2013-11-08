@@ -14,10 +14,9 @@ class DisownTimer < Timer
     super timeout
   end
 
-  def start
+  def start(&block)
     @timer = EM::Timer.new @timeout do
-      $log.error 'disowned'
-      EM.stop
+      block.call
     end
   end
 end
@@ -57,7 +56,10 @@ class Cocaine::HealthManager
   :private
   def exhale
     $log.debug '[<-] doing exhale'
-    @disown.start
+    @disown.start {
+      $log.error 'disowned'
+      EM.next_tick { EM.stop }
+    }
     @dispatcher.send_heartbeat 0
   end
 end
