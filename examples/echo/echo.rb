@@ -7,7 +7,12 @@ $log.level = Logger::DEBUG
 
 class Echo
   def execute(request, response)
-    puts 'Hi!'
+    df = request.read()
+    df.callback do |r|
+      $log.debug "le message: #{r}"
+      response.write 'la response'
+      response.close
+    end
   end
 end
 
