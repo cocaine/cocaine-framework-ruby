@@ -1,6 +1,7 @@
 require 'optparse'
 
 require 'connection'
+require 'cocaine/sandbox'
 
 $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
@@ -12,10 +13,12 @@ class Cocaine::Worker
 
     @endpoint = options[:endpoint]
     @uuid = options[:uuid]
+
+    @sandbox = Cocaine::Sandbox.new
   end
 
   def on(event, handler)
-    puts "!#{event}, #{handler}!"
+    @sandbox.on event, handler
   end
 
   def run
@@ -29,6 +32,10 @@ class Cocaine::Worker
         @dispatcher.send_heartbeat 0
       end
     end
+  end
+
+  def invoke(event, request, response)
+    @sandbox.invoke(event, request, response)
   end
 
   def terminate(errno, reason)

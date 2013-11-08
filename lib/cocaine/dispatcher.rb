@@ -56,12 +56,35 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
 end
 
 
+class Cocaine::Request
+  def initialize(channel)
+    @channel = channel
+  end
+
+  def read
+    @channel
+  end
+end
+
+
+class Cocaine::Response
+  def write(data)
+  end
+
+  def close
+  end
+end
+
+
 class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
   def initialize(worker, conn)
     super conn
     @worker = worker
     @health = Cocaine::HealthManager.new self
     @health.start
+
+    #@warn: this is weird!
+    @ch = {}
   end
 
   def process(session, message)
@@ -71,13 +94,21 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
       when RPC::TERMINATE
         @worker.terminate()
       when RPC::INVOKE
-        # create channel, request, invoke event in sandbox
+        channel = Cocaine::Channel.new
+        request = Cocaine::Request.new channel
+        response = Cocaine::Response.new
+        @ch[session] = channel
+        @worker.invoke(message.event, request, response)
       when RPC::CHUNK
-        # get channel, push chunk to it
+        df = @ch[session]
+        df.trigger message.data
       when RPC::ERROR
-        # get channel, push error to it
+        df = @ch[session]
+        df.error message.reason
       when RPC::CHOKE
-        # get channel, push choke to it and close channel
+        df = @ch.delete(session)
+        df.close
+        #todo: remove item.
       else
         raise "unexpected message id: #{id}"
     end
