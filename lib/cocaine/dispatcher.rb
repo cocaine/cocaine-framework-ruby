@@ -12,8 +12,6 @@ class Cocaine::Dispatcher
     @conn.on_message do |session, message|
       process session, message
     end
-
-    @channels = Cocaine::ChannelManager.new
   end
 
   def process(session, message)
@@ -23,6 +21,11 @@ end
 
 
 class Cocaine::ClientDispatcher < Cocaine::Dispatcher
+  def initialize(conn)
+    super conn
+    @channels = Cocaine::ChannelManager.new
+  end
+
   def process(session, message)
     channel = @channels[session]
     case message.id
@@ -82,9 +85,7 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
     @worker = worker
     @health = Cocaine::HealthManager.new self
     @health.start
-
-    #@warn: this is weird!
-    @ch = {}
+    @channels = {}
   end
 
   def process(session, message)
@@ -97,16 +98,16 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
         channel = Cocaine::Channel.new
         request = Cocaine::Request.new channel
         response = Cocaine::Response.new
-        @ch[session] = channel
+        @channels[session] = channel
         @worker.invoke(message.event, request, response)
       when RPC::CHUNK
-        df = @ch[session]
+        df = @channels[session]
         df.trigger message.data
       when RPC::ERROR
-        df = @ch[session]
+        df = @channels[session]
         df.error message.reason
       when RPC::CHOKE
-        df = @ch.delete(session)
+        df = @channels.delete(session)
         df.close
       else
         raise "unexpected message id: #{id}"
