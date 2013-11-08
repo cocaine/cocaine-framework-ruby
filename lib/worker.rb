@@ -1,3 +1,5 @@
+require 'optparse'
+
 require 'connection'
 
 $log = Logger.new(STDERR)
@@ -38,8 +40,15 @@ end
 
 class Cocaine::WorkerFactory
   def self.create
-    uuid = ARGV[ARGV.index('--uuid') + 1]
-    endpoint = ARGV[ARGV.index('--endpoint') + 1]
-    return Cocaine::Worker.new uuid: uuid, endpoint: endpoint
+    options = {}
+    OptionParser.new do |opts|
+      opts.banner = 'Usage: <your_worker.rb> --app NAME --locator ADDRESS --uuid UUID --endpoint ENDPOINT'
+
+      opts.on('--app NAME', 'Worker name') { |a| options[:app] = a }
+      opts.on('--locator ADDRESS', 'Locator address') { |a| options[:locator] = a }
+      opts.on('--uuid UUID', 'Worker uuid') { |a| options[:uuid] = a }
+      opts.on('--endpoint ENDPOINT', 'Worker endpoint') { |a| options[:endpoint] = a }
+    end.parse!
+    return Cocaine::Worker.new options
   end
 end
