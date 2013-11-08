@@ -40,26 +40,24 @@ class Cocaine::HealthManager
   def initialize(dispatcher, options={})
     @dispatcher = dispatcher
     options = {disown: 10.0, heartbeat: 30.0}.merge options
-    @timers = {
-        disown: DisownTimer.new(options[:disown]),
-        heartbeat: HeartbeatTimer.new(options[:heartbeat])
-    }
+    @disown = DisownTimer.new(options[:disown])
+    @heartbeat = HeartbeatTimer.new(options[:heartbeat])
   end
 
   def start
-    $log.debug 'starting health manager'
-    @timers[:heartbeat].start { exhale }
+    $log.debug 'health manager has been started'
+    @heartbeat.start { exhale }
   end
 
   def breath
-    $log.debug 'doing breath'
-    @timers[:disown].cancel
+    $log.debug '[->] doing breath'
+    @disown.cancel
   end
 
   :private
   def exhale
-    $log.debug 'doing exhale'
-    @timers[:disown].start
+    $log.debug '[<-] doing exhale'
+    @disown.start
     @dispatcher.send_heartbeat 0
   end
 end
