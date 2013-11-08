@@ -61,6 +61,9 @@ end
 
 
 class Terminate < Protocol
+  attr_reader :errno
+  attr_reader :reason
+
   def initialize(errno, reason)
     super RPC::TERMINATE
     @errno = errno
@@ -79,6 +82,8 @@ end
 
 
 class Invoke < Protocol
+  attr_reader :event
+
   def initialize(event)
     super RPC::INVOKE
     @event = event
