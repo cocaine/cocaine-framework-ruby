@@ -108,7 +108,6 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
       when RPC::CHOKE
         df = @ch.delete(session)
         df.close
-        #todo: remove item.
       else
         raise "unexpected message id: #{id}"
     end
