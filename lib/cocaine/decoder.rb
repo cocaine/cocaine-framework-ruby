@@ -1,4 +1,4 @@
-require_relative 'namespace'
+require 'cocaine/namespace'
 
 
 class Cocaine::Decoder

@@ -1,7 +1,6 @@
 require 'version'
 
-require 'namespace'
-
+require 'cocaine/namespace'
 require 'cocaine/channel'
-require 'service'
-require 'worker'
+require 'cocaine/service'
+require 'cocaine/worker'

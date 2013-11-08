@@ -1,6 +1,6 @@
 require 'msgpack'
 
-require_relative 'namespace'
+require 'cocaine/namespace'
 
 module RPC
   HANDSHAKE = 0

@@ -1,6 +1,6 @@
 require 'optparse'
 
-require 'connection'
+require 'cocaine/connection'
 require 'cocaine/sandbox'
 
 $log = Logger.new(STDERR)

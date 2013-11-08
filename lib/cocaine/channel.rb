@@ -1,6 +1,7 @@
 require 'eventmachine'
 
-require 'namespace'
+require 'cocaine/namespace'
+
 
 class IllegalStateError < StandardError
 end

@@ -1,7 +1,7 @@
 require 'rspec'
 
-require_relative '../lib/service'
-require_relative '../lib/protocol'
+require_relative '../lib/cocaine/service'
+require_relative '../lib/cocaine/protocol'
 
 require_relative 'stub_server'
 

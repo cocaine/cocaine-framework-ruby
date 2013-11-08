@@ -1,8 +1,8 @@
 require 'rspec'
 require 'msgpack'
 
-require_relative '../lib/connection'
-require_relative '../lib/protocol'
+require_relative '../lib/cocaine/connection'
+require_relative '../lib/cocaine/protocol'
 
 require_relative 'stub_server'
 

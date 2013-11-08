@@ -5,8 +5,8 @@ require 'msgpack'
 require 'eventmachine'
 
 require 'cocaine/channel'
-require_relative 'connection'
-require_relative 'protocol'
+require 'cocaine/connection'
+require 'cocaine/protocol'
 
 
 class Object

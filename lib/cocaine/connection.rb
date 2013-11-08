@@ -2,9 +2,8 @@ require 'logger'
 require 'eventmachine'
 
 require 'cocaine/dispatcher'
-require 'decoder'
-require 'namespace'
-require 'protocol'
+require 'cocaine/decoder'
+require 'cocaine/protocol'
 
 
 class Cocaine::Connection < EventMachine::Connection

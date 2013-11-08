@@ -1,6 +1,6 @@
 require 'rspec'
 
-require_relative '../lib/worker'
+require_relative '../lib/cocaine/worker'
 
 require 'stub_server'
 

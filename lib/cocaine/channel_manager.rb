@@ -1,4 +1,5 @@
 require 'cocaine/channel'
+require 'cocaine/namespace'
 
 class Cocaine::ChannelManager
   def initialize
