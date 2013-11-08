@@ -1,4 +1,7 @@
-$log = Logger.new(STDOUT)
+require 'eventmachine'
+
+
+$log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
 
 
@@ -19,6 +22,10 @@ class DisownTimer < Timer
       block.call
     end
   end
+
+  def cancel
+    @timer.cancel if @timer
+  end
 end
 
 
@@ -32,13 +39,17 @@ class HeartbeatTimer < Timer
       block.call
     end
   end
+
+  def cancel
+    @timer.cancel if @timer
+  end
 end
 
 
 class Cocaine::HealthManager
   def initialize(dispatcher, options={})
     @dispatcher = dispatcher
-    options = {disown: 10.0, heartbeat: 30.0}.merge options
+    options = {disown: 2.0, heartbeat: 10.0}.merge options
     @disown = DisownTimer.new(options[:disown])
     @heartbeat = HeartbeatTimer.new(options[:heartbeat])
   end
@@ -57,7 +68,7 @@ class Cocaine::HealthManager
   def exhale
     $log.debug '[<-] doing exhale'
     @disown.start {
-      $log.error 'disowned'
+      $log.error 'worker has been disowned'
       EM.next_tick { EM.stop }
     }
     @dispatcher.send_heartbeat 0

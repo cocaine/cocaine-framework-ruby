@@ -2,7 +2,7 @@ require 'protocol'
 require 'cocaine/health'
 require_relative '../channel_manager'
 
-$log = Logger.new(STDOUT)
+$log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
 
 

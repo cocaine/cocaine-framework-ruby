@@ -22,7 +22,7 @@ class Protocol
   end
 
   def pack(session)
-    [@id, session, data.to_msgpack].to_msgpack
+    [@id, session, data].to_msgpack
   end
 
   :protected
@@ -38,6 +38,7 @@ class Handshake < Protocol
     @uuid = uuid
   end
 
+  :protected
   def data
     [@uuid]
   end
@@ -104,7 +105,7 @@ class Chunk < Protocol
 
   :protected
   def data
-    @data
+    @data.to_msgpack
   end
 
   def to_s
@@ -148,8 +149,14 @@ end
 class Cocaine::ProtocolFactory
   def self.create(id, data)
     case id
+      when RPC::HANDSHAKE
+        Handshake.new *data
       when RPC::HEARTBEAT
         Heartbeat.new
+      when RPC::TERMINATE
+        Terminate.new *data
+      when RPC::INVOKE
+        Invoke.new *data
       when RPC::CHUNK
         Chunk.new(*data)
       when RPC::ERROR

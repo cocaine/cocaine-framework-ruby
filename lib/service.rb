@@ -18,7 +18,7 @@ class Object
 end
 
 
-$log = Logger.new(STDOUT)
+$log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
 
 
