@@ -6,7 +6,7 @@ $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
 
 class Echo
-  def execute
+  def execute(request, response)
     puts 'Hi!'
   end
 end
