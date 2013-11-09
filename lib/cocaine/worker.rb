@@ -9,7 +9,10 @@ $log.level = Logger::DEBUG
 
 class Cocaine::Worker
   def initialize(options={})
-    options = {endpoint: '', uuid: ''}.merge(options)
+    options = {
+        endpoint: '',
+        uuid: '',
+    }.merge(options)
 
     @endpoint = options[:endpoint]
     @uuid = options[:uuid]
@@ -22,6 +25,12 @@ class Cocaine::Worker
   end
 
   def run
+    EM.error_handler { |error|
+      short_reason = error.inspect
+      traceback = error.backtrace.join("\n")
+      $log.warn "error caught at the top of event loop:\n#{short_reason}\n#{traceback}"
+    }
+
     EM.run do
       $log.debug 'starting worker'
       $log.debug "connecting to the #{@endpoint}"
@@ -39,8 +48,10 @@ class Cocaine::Worker
   end
 
   def terminate(errno, reason)
-    $log.debug "terminating with [#{errno}] #{reason}"
+    $log.debug "terminating with: [#{errno}] #{reason}"
     @dispatcher.send_terminate 0, errno, reason
+    EM.stop
+    exit(errno)
   end
 end
 

@@ -75,7 +75,7 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
       when RPC::HEARTBEAT
         @health.breath()
       when RPC::TERMINATE
-        @worker.terminate()
+        @worker.terminate message.errno, message.reason
       when RPC::INVOKE
         channel = Cocaine::Channel.new
         request = Cocaine::Request.new channel
