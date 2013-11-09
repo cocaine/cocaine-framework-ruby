@@ -13,6 +13,11 @@ class Cocaine::Response
     @dispatcher.send_chunk @session, data.to_msgpack
   end
 
+  def error(errno, reason)
+    check_closed
+    @dispatcher.send_error @session, errno, reason
+  end
+
   def close
     check_closed
     @closed = true
