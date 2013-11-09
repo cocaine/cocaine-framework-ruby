@@ -22,11 +22,11 @@ class Protocol
   end
 
   def pack(session)
-    [@id, session, data].to_msgpack
+    [@id, session, content].to_msgpack
   end
 
   :protected
-  def data
+  def content
     []
   end
 end
@@ -39,7 +39,7 @@ class Handshake < Protocol
   end
 
   :protected
-  def data
+  def content
     [@uuid]
   end
 
@@ -71,7 +71,7 @@ class Terminate < Protocol
   end
 
   :protected
-  def data
+  def content
     [@errno, @reason]
   end
 
@@ -90,7 +90,7 @@ class Invoke < Protocol
   end
 
   :protected
-  def data
+  def content
     [@event]
   end
 
@@ -103,14 +103,14 @@ end
 class Chunk < Protocol
   attr_reader :data
 
-  def initialize(*data)
+  def initialize(data)
     super RPC::CHUNK
     @data = data
   end
 
   :protected
-  def data
-    @data.to_msgpack
+  def content
+    [@data]
   end
 
   def to_s
@@ -130,7 +130,7 @@ class Error < Protocol
   end
 
   :protected
-  def data
+  def content
     [@errno, @reason]
   end
 
