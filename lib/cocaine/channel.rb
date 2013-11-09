@@ -1,10 +1,7 @@
 require 'eventmachine'
 
+require 'cocaine/error'
 require 'cocaine/namespace'
-
-
-class IllegalStateError < StandardError
-end
 
 class Cocaine::Channel
   def initialize
