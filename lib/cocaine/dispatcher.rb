@@ -79,7 +79,7 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
       when RPC::INVOKE
         channel = Cocaine::Channel.new
         request = Cocaine::Request.new channel
-        response = Cocaine::Response.new
+        response = Cocaine::Response.new session, self
         @channels[session] = channel
         @worker.invoke(message.event, request, response)
       when RPC::CHUNK
@@ -106,6 +106,18 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
 
   def send_terminate(session, errno, reason)
     send Terminate.new(errno, reason), session
+  end
+
+  def send_chunk(session, data)
+    send Chunk.new(data), session
+  end
+
+  def send_error(session, errno, reason)
+    send Error.new(errno, reason), session
+  end
+
+  def send_choke(session)
+    send Choke.new, session
   end
 
   :private
