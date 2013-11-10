@@ -3,7 +3,7 @@ $log.level = Logger::DEBUG
 
 
 class Cocaine::Sandbox
-  module ERRNO
+  module Errno
     NO_SUCH_EVENT = 1
   end
 
@@ -19,7 +19,7 @@ class Cocaine::Sandbox
     if @handlers.has_key? event
       invoke_handler event, request, response
     else
-      write_error ERRNO::NO_SUCH_EVENT, "application has no event '#{event}'", response
+      write_error Errno::NO_SUCH_EVENT, "application has no event '#{event}'", response
     end
   end
 
