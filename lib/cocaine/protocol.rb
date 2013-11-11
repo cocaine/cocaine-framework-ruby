@@ -173,3 +173,7 @@ class Cocaine::ProtocolFactory
     end
   end
 end
+
+
+class ChokeEvent < Exception
+end
