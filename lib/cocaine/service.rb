@@ -22,6 +22,10 @@ $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
 
 
+class ServiceError < Exception
+end
+
+
 class Cocaine::AbstractService
   attr_reader :api
 

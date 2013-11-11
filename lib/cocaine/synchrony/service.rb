@@ -4,6 +4,7 @@ require 'em-synchrony'
 require 'cocaine/namespace'
 require 'cocaine/service'
 
+
 class Cocaine::Synchrony::Channel
   def initialize(channel)
     @channel = channel
@@ -12,7 +13,7 @@ class Cocaine::Synchrony::Channel
     @channel.errback { |err|
       if err.instance_of? Choke
       else
-        raise Exception.new err
+        raise ServiceError.new err
       end
     }
 
