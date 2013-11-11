@@ -88,7 +88,7 @@ describe Cocaine::Synchrony::Service do
     end
   end
 
-  example 'synchrony usage of streaming echo service with collect method' do
+  example 'synchrony usage of streaming echo service with partial collect method' do
     EM.synchrony do
       service = Cocaine::Synchrony::Service.new 'echo-ruby'
       ch = service.enqueue('ping-streaming', 'message')
@@ -98,11 +98,21 @@ describe Cocaine::Synchrony::Service do
     end
   end
 
-  example 'synchrony usage of streaming echo service with collect method' do
+  example 'synchrony usage of streaming echo service with full collect method' do
     EM.synchrony do
       service = Cocaine::Synchrony::Service.new 'echo-ruby'
       ch = service.enqueue('ping-streaming', 'message')
       msg= ch.collect(3)
+      expect(msg).to eq(['message', 'message!', 'message! :)'])
+      EM.stop
+    end
+  end
+
+  example 'synchrony usage of streaming echo service with collect until choke method' do
+    EM.synchrony do
+      service = Cocaine::Synchrony::Service.new 'echo-ruby'
+      ch = service.enqueue('ping-streaming', 'message')
+      msg= ch.collect()
       expect(msg).to eq(['message', 'message!', 'message! :)'])
       EM.stop
     end

@@ -23,7 +23,7 @@ class Cocaine::Synchrony::Channel
     @channel.errback { |err|
       if fb.alive?
         if err.instance_of? Choke
-          fb.resume
+          fb.resume err
         else
           raise ServiceError.new err
         end
@@ -46,12 +46,35 @@ class Cocaine::Synchrony::Channel
     end
   end
 
-  def collect(count)
+  def collect(count=0)
+    if count == 0
+      collect_until_choke
+    else
+      collect_until_count count
+    end
+  end
+
+  :private
+  def collect_until_count(count)
     chunks = []
     while count > 0
       chunks.push Fiber.yield
       count -= 1
     end
+    chunks
+  end
+
+  :private
+  def collect_until_choke
+    chunks = []
+
+    while true
+      chunk = Fiber.yield
+      break if chunk.instance_of? Choke
+      chunks.push chunk
+      puts "#{chunk}, #{chunks}"
+    end
+
     chunks
   end
 end
