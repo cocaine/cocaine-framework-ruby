@@ -39,7 +39,7 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
         channel.error message
         channel.close
       else
-        raise "unexpected message id: #{id}"
+        raise "unexpected message id: #{message.id}"
     end
   end
 
