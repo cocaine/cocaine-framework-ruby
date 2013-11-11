@@ -8,26 +8,55 @@ require 'cocaine/service'
 class Cocaine::Synchrony::Channel
   def initialize(channel)
     @channel = channel
-    @fb = Fiber.current
-    @channel.callback { |result| @fb.resume result }
-    @channel.errback { |err|
-      if err.instance_of? Choke
+    @chunks = []
+
+    fb = Fiber.current
+
+    @channel.callback { |result|
+      if fb.alive?
+        fb.resume result
       else
-        raise ServiceError.new err
+        @chunks.push result
       end
     }
 
-    @chunks = []
+    @channel.errback { |err|
+      if fb.alive?
+        if err.instance_of? Choke
+          fb.resume
+        else
+          raise ServiceError.new err
+        end
+      else
+        @chunks.push err
+      end
+    }
   end
 
   def read
     if @chunks.empty?
       Fiber.yield
     else
-      @chunks.pop
+      chunk = @chunks.pop
+      if chunk.instance_of? Exception
+        raise chunk
+      else
+        chunk
+      end
     end
   end
 end
+
+
+module Cocaine::Synchrony
+  def self.sync(df)
+    fb = Fiber.current
+    df.callback { |result| fb.resume result }
+    df.errback { |err| raise Exception.new err }
+    Fiber.yield
+  end
+end
+
 
 class Cocaine::Synchrony::Service
   def initialize(name)

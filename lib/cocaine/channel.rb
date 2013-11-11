@@ -68,7 +68,7 @@ class Cocaine::Channel
       block.call entities.pop
     end
 
-    callbacks.push block unless callbacks.include? block
+    callbacks.push block
     self
   end
 

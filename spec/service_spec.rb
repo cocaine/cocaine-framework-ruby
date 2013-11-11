@@ -51,11 +51,13 @@ describe Cocaine::Service do
       d.callback {
         service.list.callback {
           flag = true
-          EventMachine.stop()
+          EventMachine.stop
         }.errback { |err|
           puts "error: #{err}"
-          EventMachine.stop()
+          EventMachine.stop
         }
+      }.errback {
+        EM.stop
       }
     end
     expect(flag).to be true
