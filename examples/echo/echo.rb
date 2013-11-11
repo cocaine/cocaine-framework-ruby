@@ -16,6 +16,7 @@ class Echo
   end
 end
 
+
 class EchoStreaming
   def execute(request, response)
     df = request.read
@@ -29,7 +30,23 @@ class EchoStreaming
   end
 end
 
+
+class HttpEcho
+  include Cocaine::Http
+
+  def execute(request, response)
+    df = request.read
+    df.callback { |req|
+      msg = req.query['message']
+      response.add_header('Content-Type', 'plain/text')
+      response.write_body(msg)
+      response.close
+    }
+  end
+end
+
 w = Cocaine::WorkerFactory.create
 w.on 'ping', Echo.new
 w.on 'ping-streaming', EchoStreaming.new
+w.on 'ping-http', HttpEcho.new
 w.run()
