@@ -16,7 +16,7 @@ class Cocaine::Synchrony::Service
   def initialize(name)
     @service = Cocaine::Service.new name
     connect
-    create_proxies
+    create_proxy_methods
   end
 
   def connect
@@ -24,7 +24,7 @@ class Cocaine::Synchrony::Service
   end
 
   :private
-  def create_proxies
+  def create_proxy_methods
     @service.api.each do |id, name|
       self.metaclass.send(:define_method, name) do |*args|
         Cocaine::Synchrony::Channel.new @service.send name, *args
