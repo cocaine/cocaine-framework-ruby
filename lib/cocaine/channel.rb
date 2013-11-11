@@ -12,6 +12,7 @@ class Cocaine::Channel
 
     @callbacks = []
     @errbacks = []
+    @collector = nil
   end
 
   def callback(&block)
