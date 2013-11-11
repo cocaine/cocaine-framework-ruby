@@ -29,6 +29,10 @@ class Protocol
   def content
     []
   end
+
+  def to_s
+    "#{self.class.name}(#{content})"
+  end
 end
 
 
@@ -42,20 +46,12 @@ class Handshake < Protocol
   def content
     [@uuid]
   end
-
-  def to_s
-    "Handshake(#{@uuid})"
-  end
 end
 
 
 class Heartbeat < Protocol
   def initialize
     super RPC::HEARTBEAT
-  end
-
-  def to_s
-    'Heartbeat()'
   end
 end
 
@@ -74,10 +70,6 @@ class Terminate < Protocol
   def content
     [@errno, @reason]
   end
-
-  def to_s
-    "Terminate(#{@errno}, #{@reason})"
-  end
 end
 
 
@@ -93,10 +85,6 @@ class Invoke < Protocol
   def content
     [@event]
   end
-
-  def to_s
-    "Invoke(#{@event})"
-  end
 end
 
 
@@ -111,10 +99,6 @@ class Chunk < Protocol
   :protected
   def content
     [@data]
-  end
-
-  def to_s
-    "Chunk(#{@data})"
   end
 end
 
@@ -133,20 +117,12 @@ class Error < Protocol
   def content
     [@errno, @reason]
   end
-
-  def to_s
-    "Error(#{@errno}, #{reason})"
-  end
 end
 
 
 class Choke < Protocol
   def initialize
     super RPC::CHOKE
-  end
-
-  def to_s
-    'Choke()'
   end
 end
 
