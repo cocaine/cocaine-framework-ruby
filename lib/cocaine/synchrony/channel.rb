@@ -5,12 +5,15 @@ require 'cocaine/namespace'
 
 class Cocaine::Synchrony::Channel
   def initialize(channel)
-    @channel = channel
     @pending = []
+    register_fiber channel
+  end
 
+  :private
+  def register_fiber(channel)
     fb = Fiber.current
 
-    @channel.callback { |result|
+    channel.callback { |result|
       if fb.alive?
         fb.resume result
       else
@@ -18,7 +21,7 @@ class Cocaine::Synchrony::Channel
       end
     }
 
-    @channel.errback { |err|
+    channel.errback { |err|
       if fb.alive?
         if err.instance_of? Choke
           fb.resume err
@@ -35,12 +38,7 @@ class Cocaine::Synchrony::Channel
     if @pending.empty?
       Fiber.yield
     else
-      chunk = @pending.pop
-      if chunk.instance_of? Exception
-        raise chunk
-      else
-        chunk
-      end
+      pop_pending
     end
   end
 
@@ -49,6 +47,16 @@ class Cocaine::Synchrony::Channel
       collect_until_choke
     else
       collect_until_count count
+    end
+  end
+
+  :private
+  def pop_pending
+    chunk = @pending.pop
+    if chunk.instance_of? Exception
+      raise chunk
+    else
+      chunk
     end
   end
 
@@ -65,14 +73,11 @@ class Cocaine::Synchrony::Channel
   :private
   def collect_until_choke
     chunks = []
-
     loop do
       chunk = Fiber.yield
       break if chunk.instance_of? Choke
       chunks.push chunk
-      puts "#{chunk}, #{chunks}"
     end
-
     chunks
   end
 end
