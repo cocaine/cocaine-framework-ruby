@@ -2,8 +2,10 @@ require 'rspec'
 
 require_relative '../lib/cocaine/service'
 require_relative '../lib/cocaine/protocol'
+require_relative '../lib/cocaine/synchrony/service'
 
 require_relative 'stub_server'
+
 
 describe Cocaine::Locator do
   it 'should send correct message to the server' do
@@ -60,7 +62,14 @@ describe Cocaine::Service do
   end
 end
 
-describe Cocaine::Locator do
+describe Cocaine::Synchrony::Service do
   example 'synchrony usage of node service' do
+    EM.synchrony do
+      service = Cocaine::Synchrony::Service.new 'echo-ruby'
+      ch = service.enqueue('ping', 'message')
+      msg = ch.read
+      expect(msg).to eq('message')
+      EM.stop
+    end
   end
 end
