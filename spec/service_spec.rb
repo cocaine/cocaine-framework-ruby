@@ -65,12 +65,25 @@ describe Cocaine::Service do
 end
 
 describe Cocaine::Synchrony::Service do
-  example 'synchrony usage of node service' do
+  example 'synchrony usage of echo service' do
     EM.synchrony do
       service = Cocaine::Synchrony::Service.new 'echo-ruby'
       ch = service.enqueue('ping', 'message')
       msg = ch.read
       expect(msg).to eq('message')
+      EM.stop
+    end
+  end
+
+  example 'synchrony usage of streaming echo service' do
+    EM.synchrony do
+      service = Cocaine::Synchrony::Service.new 'echo-ruby'
+      ch = service.enqueue('ping-streaming', 'message')
+      msg = [nil] * 3
+      msg[0] = ch.read
+      msg[1] = ch.read
+      msg[2] = ch.read
+      expect(msg).to eq(['message', 'message!', 'message! :)'])
       EM.stop
     end
   end

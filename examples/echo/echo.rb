@@ -16,6 +16,20 @@ class Echo
   end
 end
 
+class EchoStreaming
+  def execute(request, response)
+    df = request.read
+    df.callback do |msg|
+      $log.debug "Message received: #{msg}. Sending it back more happily."
+      response.write msg
+      response.write msg + '!'
+      response.write msg + '! :)'
+      response.close
+    end
+  end
+end
+
 w = Cocaine::WorkerFactory.create
 w.on 'ping', Echo.new
+w.on 'ping-streaming', EchoStreaming.new
 w.run()
