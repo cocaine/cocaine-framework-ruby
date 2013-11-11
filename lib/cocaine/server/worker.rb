@@ -1,7 +1,7 @@
 require 'optparse'
 
 require 'cocaine/connection'
-require 'cocaine/sandbox'
+require 'cocaine/server/sandbox'
 
 $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG

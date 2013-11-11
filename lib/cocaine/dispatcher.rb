@@ -1,6 +1,6 @@
 require 'cocaine/channel_manager'
-require 'cocaine/health'
 require 'cocaine/protocol'
+require 'cocaine/server/health'
 require 'cocaine/server/request'
 require 'cocaine/server/response'
 

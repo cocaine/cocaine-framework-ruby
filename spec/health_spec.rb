@@ -1,6 +1,6 @@
 require 'rspec'
 
-require_relative '../lib/cocaine/health'
+require_relative '../lib/cocaine/server/health'
 
 describe Cocaine::HealthManager do
   it 'should be' do
