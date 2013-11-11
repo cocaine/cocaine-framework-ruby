@@ -133,17 +133,17 @@ class Cocaine::ProtocolFactory
       when RPC::HANDSHAKE
         Handshake.new *data
       when RPC::HEARTBEAT
-        Heartbeat.new
+        Heartbeat.new *data
       when RPC::TERMINATE
         Terminate.new *data
       when RPC::INVOKE
         Invoke.new *data
       when RPC::CHUNK
-        Chunk.new(*data)
+        Chunk.new *data
       when RPC::ERROR
-        Error.new(*data)
+        Error.new *data
       when RPC::CHOKE
-        Choke.new
+        Choke.new *data
       else
         raise "unexpected message id: #{id}"
     end
