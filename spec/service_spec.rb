@@ -25,18 +25,17 @@ describe Cocaine::Locator do
   end
 
   example 'resolving node service' do
-    EventMachine.run do
+    EM.run do
       locator = Cocaine::Locator.new
-      connection = locator.resolve('node')
-      connection.callback { |endpoint, version, api|
+      locator.resolve('node').callback { |endpoint, version, api|
         expect(endpoint[0]).to be_a(String)
         expect(1024 <= endpoint[1] && endpoint[1] <= 65535).to be true
         expect(version).to eq(1)
         expect(api).to eq({0=>'start_app',1 => 'pause_app', 2 => 'list'})
-        EventMachine.stop()
-      }.errback { |errno, reason|
-        fail("[#{errno}] #{reason}")
-        EventMachine.stop()
+        EM.stop()
+      }.errback {
+        fail()
+        EM.stop()
       }
     end
   end
@@ -45,18 +44,17 @@ end
 describe Cocaine::Service do
   example 'using node service' do
     flag = false
-    EventMachine.run do
+    EM.run do
       service = Cocaine::Service.new 'node'
-      d = service.connect
-      d.callback {
+      service.connect.callback {
         service.list.callback {
           flag = true
-          EventMachine.stop
-        }.errback { |err|
-          puts "error: #{err}"
-          EventMachine.stop
+          EM.stop
+        }.errback {
+          EM.stop
         }
       }.errback {
+        fail()
         EM.stop
       }
     end

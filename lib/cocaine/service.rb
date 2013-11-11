@@ -38,11 +38,13 @@ class Cocaine::AbstractService
   def connect_to_endpoint(*endpoint)
     df = EM::DefaultDeferrable.new
     EM.connect *endpoint, Cocaine::Connection do |conn|
-      $log.debug "connection established with service '#{@name}' at #{endpoint}"
-      @dispatcher = Cocaine::ClientDispatcher.new conn
+      puts "e=#{conn.error?}"
       if conn.error?
+        $log.debug "failed to connect to the '#{@name}' service at #{endpoint}"
         df.fail conn.error?
       else
+        $log.debug "connection established with service '#{@name}' at #{endpoint}"
+        @dispatcher = Cocaine::ClientDispatcher.new conn
         df.succeed
       end
     end
@@ -87,6 +89,7 @@ class Cocaine::Service < Cocaine::AbstractService
     locator = Cocaine::Locator.new
     d = locator.resolve @name
     d.callback { |result| on_connect result, df }
+    d.errback { |err| df.fail err }
     df
   end
 

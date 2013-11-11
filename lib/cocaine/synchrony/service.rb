@@ -84,7 +84,7 @@ module Cocaine::Synchrony
   def self.sync(df)
     fb = Fiber.current
     df.callback { |result| fb.resume result }
-    df.errback { |err| raise Exception.new err }
+    df.errback { |err| raise ServiceError.new err }
     Fiber.yield
   end
 end
@@ -99,7 +99,7 @@ class Cocaine::Synchrony::Service
 
   :private
   def connect
-    EM::Synchrony.sync @service.connect
+    Cocaine::Synchrony.sync @service.connect
   end
 
   :private
