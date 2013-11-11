@@ -45,6 +45,15 @@ class Cocaine::Synchrony::Channel
       end
     end
   end
+
+  def collect(count)
+    chunks = []
+    while count > 0
+      chunks.push Fiber.yield
+      count -= 1
+    end
+    chunks
+  end
 end
 
 
