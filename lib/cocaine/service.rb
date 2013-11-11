@@ -87,7 +87,6 @@ class Cocaine::Service < Cocaine::AbstractService
   def on_connect(result, df)
     $log.debug "service '#{@name}' resolved: #{result}"
 
-    # Parse locator response
     endpoint, version, api = result
     $log.debug "protocol version: #{version}"
 

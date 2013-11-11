@@ -6,7 +6,6 @@ require_relative '../lib/cocaine/protocol'
 require_relative 'stub_server'
 
 describe Cocaine::Locator do
-
   it 'should send correct message to the server' do
     EM.run do
       response = [RPC::CHUNK, 1, [[], 1, {}].to_msgpack].to_msgpack
@@ -23,7 +22,7 @@ describe Cocaine::Locator do
     end
   end
 
-  example do
+  example 'resolving node service' do
     EventMachine.run do
       locator = Cocaine::Locator.new
       connection = locator.resolve('node')
@@ -39,8 +38,10 @@ describe Cocaine::Locator do
       }
     end
   end
+end
 
-  example do
+describe Cocaine::Service do
+  example 'using node service' do
     flag = false
     EventMachine.run do
       service = Cocaine::Service.new 'node'
@@ -56,5 +57,10 @@ describe Cocaine::Locator do
       }
     end
     expect(flag).to be true
+  end
+end
+
+describe Cocaine::Locator do
+  example 'synchrony usage of node service' do
   end
 end
