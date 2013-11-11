@@ -8,7 +8,7 @@ require 'cocaine/service'
 class Cocaine::Synchrony::Channel
   def initialize(channel)
     @channel = channel
-    @chunks = []
+    @pending = []
 
     fb = Fiber.current
 
@@ -16,7 +16,7 @@ class Cocaine::Synchrony::Channel
       if fb.alive?
         fb.resume result
       else
-        @chunks.push result
+        @pending.push result
       end
     }
 
@@ -28,16 +28,16 @@ class Cocaine::Synchrony::Channel
           raise ServiceError.new err
         end
       else
-        @chunks.push err
+        @pending.push err
       end
     }
   end
 
   def read
-    if @chunks.empty?
+    if @pending.empty?
       Fiber.yield
     else
-      chunk = @chunks.pop
+      chunk = @pending.pop
       if chunk.instance_of? Exception
         raise chunk
       else
