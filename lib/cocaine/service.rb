@@ -23,8 +23,11 @@ $log.level = Logger::DEBUG
 
 
 class Cocaine::AbstractService
+  attr_reader :api
+
   def initialize(name)
     @name = name
+    @api = {}
   end
 
   :private
@@ -87,16 +90,14 @@ class Cocaine::Service < Cocaine::AbstractService
   def on_connect(result, df)
     $log.debug "service '#{@name}' resolved: #{result}"
 
-    endpoint, version, api = result
-    $log.debug "protocol version: #{version}"
-
-    api.each do |id, name|
+    @endpoint, @version, @api = result
+    @api.each do |id, name|
       self.metaclass.send(:define_method, name) do |*args|
         invoke id, *args
       end
     end
 
-    connect_df = connect_to_endpoint *endpoint
+    connect_df = connect_to_endpoint *@endpoint
     connect_df.callback { df.succeed }
     connect_df.errback { |err| df.fail err }
   end
