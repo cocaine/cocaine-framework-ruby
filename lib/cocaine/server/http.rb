@@ -29,8 +29,8 @@ module Cocaine::Http
   end
 
   class Response
-    def initialize(rs)
-      @response = rs
+    def initialize(response)
+      @response = response
     end
 
     def write_headers(code, headers)
