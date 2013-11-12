@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'cocaine'
+require 'cocaine/server/http'
 
 $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
@@ -32,17 +33,20 @@ end
 
 
 class HttpEcho
-  include Cocaine::Http
+  extend Cocaine::Http
 
   def execute(request, response)
     df = request.read
-    df.callback { |req|
-      msg = req.query['message']
-      response.add_header('Content-Type', 'plain/text')
-      response.write_body(msg)
+    df.callback { |rq|
+      msg = rq.query['message']
+      $log.debug "Message: #{rq.query}"
+      $log.debug "Message: #{msg}"
+      response.write_headers(200, ['Content-Type', 'plain/text'])
+      response.body = msg
       response.close
     }
   end
+  http :execute
 end
 
 w = Cocaine::WorkerFactory.create

@@ -1,9 +1,9 @@
 class Cocaine::Request
   def initialize(channel)
-    @channel = channel
+    @ch = channel
   end
 
   def read
-    @channel
+    @ch
   end
 end
