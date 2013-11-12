@@ -19,7 +19,7 @@ module Cocaine::Http
       @ch.callback { |msg|
         @method, url, @version, headers, @body = MessagePack::unpack msg
         @headers = Hash[headers]
-        @query = CGI::parse(url)
+        @query = CGI.parse(URI.parse(url).query)
         ch.trigger self
       }.errback { |err|
         ch.error err
