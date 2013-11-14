@@ -1,6 +1,6 @@
 require 'rspec'
 
-require_relative '../lib/cocaine/service'
+require_relative '../lib/cocaine/client/service'
 require_relative '../lib/cocaine/protocol'
 require_relative '../lib/cocaine/synchrony/service'
 

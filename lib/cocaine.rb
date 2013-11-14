@@ -1,6 +1,6 @@
 require 'version'
 
 require 'cocaine/namespace'
-require 'cocaine/channel'
-require 'cocaine/service'
+require 'cocaine/asio/channel'
+require 'cocaine/client/service'
 require 'cocaine/server/worker'

@@ -1,4 +1,4 @@
-require 'cocaine/channel_manager'
+require 'cocaine/asio/channel/manager'
 require 'cocaine/protocol'
 require 'cocaine/server/health'
 require 'cocaine/server/request'

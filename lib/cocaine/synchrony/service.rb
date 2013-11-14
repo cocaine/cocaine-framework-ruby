@@ -1,4 +1,4 @@
-require 'cocaine/service'
+require 'cocaine/client/service'
 require 'cocaine/synchrony/channel'
 
 

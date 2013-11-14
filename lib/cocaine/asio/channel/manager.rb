@@ -1,4 +1,4 @@
-require 'cocaine/channel'
+require 'cocaine/asio/channel'
 require 'cocaine/namespace'
 
 class Cocaine::ChannelManager
