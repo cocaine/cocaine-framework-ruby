@@ -1,6 +1,7 @@
 require 'rspec'
 
 require_relative '../lib/cocaine/channel'
+require_relative '../lib/cocaine/asio/zipper'
 
 describe Cocaine::Channel do
   it 'should invoke callback immediately if it has pending data' do
@@ -121,5 +122,13 @@ describe Cocaine::Channel, '#collect' do
     }
     ch.close
     expect(flag).to be true
+  end
+end
+
+
+describe Cocaine::ChannelZipper do
+  it 'should be' do
+    channel = double()
+    Cocaine::ChannelZipper.new channel
   end
 end
