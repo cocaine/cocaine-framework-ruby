@@ -2,7 +2,6 @@ require 'cocaine/future'
 
 class Cocaine::ChannelCombiner
   def initialize(channel)
-    channel = channel
     channel.callback { |result|
       @callback.call Cocaine::Future.value result if @callback
     }
