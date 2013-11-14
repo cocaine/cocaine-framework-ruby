@@ -24,7 +24,7 @@ class Cocaine::Response
     @dispatcher.send_choke @session
   end
 
-  :private
+  private
   def check_closed
     raise IllegalStateError.new 'Response is already closed' if @closed
   end

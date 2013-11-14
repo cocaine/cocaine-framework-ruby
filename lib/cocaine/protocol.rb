@@ -16,22 +16,22 @@ end
 class Protocol
   attr_reader :id
 
-  :protected
-  def initialize(id)
-    @id = id
-  end
-
   def pack(session)
     [@id, session, content].to_msgpack
   end
 
-  :protected
-  def content
-    []
-  end
-
   def to_s
     "#{self.class.name}(#{content})"
+  end
+
+  protected
+  def initialize(id)
+    @id = id
+  end
+
+  protected
+  def content
+    []
   end
 end
 
@@ -42,7 +42,7 @@ class Handshake < Protocol
     @uuid = uuid
   end
 
-  :protected
+  protected
   def content
     [@uuid]
   end
@@ -66,7 +66,7 @@ class Terminate < Protocol
     @reason = reason
   end
 
-  :protected
+  protected
   def content
     [@errno, @reason]
   end
@@ -81,7 +81,7 @@ class Invoke < Protocol
     @event = event
   end
 
-  :protected
+  protected
   def content
     [@event]
   end
@@ -96,7 +96,7 @@ class Chunk < Protocol
     @data = data
   end
 
-  :protected
+  protected
   def content
     [@data]
   end
@@ -113,7 +113,7 @@ class Error < Protocol
     @reason = reason
   end
 
-  :protected
+  protected
   def content
     [@errno, @reason]
   end

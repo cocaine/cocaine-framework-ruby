@@ -23,7 +23,7 @@ class Cocaine::Synchrony::Service
     Cocaine::Synchrony.sync @service.connect
   end
 
-  :private
+  private
   def create_proxy_methods
     @service.api.each do |id, name|
       self.metaclass.send(:define_method, name) do |*args|

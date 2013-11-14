@@ -34,7 +34,12 @@ class Cocaine::AbstractService
     @api = {}
   end
 
-  :private
+  def invoke(method_id, *args)
+    $log.debug "invoking '#{@name}' method #{method_id} with #{args}"
+    @dispatcher.invoke method_id, *args
+  end
+
+  private
   def connect_to_endpoint(*endpoint)
     df = EM::DefaultDeferrable.new
     EM.connect *endpoint, Cocaine::Connection do |conn|
@@ -48,11 +53,6 @@ class Cocaine::AbstractService
       end
     end
     df
-  end
-
-  def invoke(method_id, *args)
-    $log.debug "invoking '#{@name}' method #{method_id} with #{args}"
-    @dispatcher.invoke method_id, *args
   end
 end
 
@@ -72,7 +72,7 @@ class Cocaine::Locator < Cocaine::AbstractService
     df
   end
 
-  :private
+  private
   def do_resolve(name, df)
     $log.debug "resolving service '#{name}'"
     channel = invoke 0, name
@@ -92,7 +92,7 @@ class Cocaine::Service < Cocaine::AbstractService
     df
   end
 
-  :private
+  private
   def on_connect(result, df)
     $log.debug "service '#{@name}' resolved: #{result}"
 

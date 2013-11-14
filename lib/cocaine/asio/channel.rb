@@ -38,14 +38,20 @@ class Cocaine::Channel
     check_and_trigger_collector
   end
 
-  :private
+  def collect
+    raise IllegalStateError if @state == :closed
+    raise IllegalStateError.new 'only one collector can be bound to the channel' if @collector
+    @collector ||= EM::DefaultDeferrable.new
+  end
+
+  private
   def check_and_trigger_collector
     if @collector
       trigger_collector
     end
   end
 
-  :private
+  private
   def trigger_collector
     if @errors.length == 1
       @collector.fail *@errors
@@ -54,13 +60,7 @@ class Cocaine::Channel
     end
   end
 
-  def collect
-    raise IllegalStateError if @state == :closed
-    raise IllegalStateError.new 'only one collector can be bound to the channel' if @collector
-    @collector ||= EM::DefaultDeferrable.new
-  end
-
-  :private
+  private
   def register_callback(callbacks, entities, block)
     raise IllegalStateError unless @state == :opened
 
@@ -72,7 +72,7 @@ class Cocaine::Channel
     self
   end
 
-  :private
+  private
   def do_trigger(callbacks, entities, entity)
     raise IllegalStateError unless @state == :opened
 

@@ -51,7 +51,7 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
     channel
   end
 
-  :private
+  private
   def unpack_chunk(data)
     if data.kind_of?(Array)
       data = data.join(',')
@@ -120,7 +120,7 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
     send Choke.new, session
   end
 
-  :private
+  private
   def send(message, session)
     @conn.send_data message.pack(session)
   end

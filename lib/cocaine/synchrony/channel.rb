@@ -9,7 +9,23 @@ class Cocaine::Synchrony::Channel
     register_fiber channel
   end
 
-  :private
+  def read
+    if @pending.empty?
+      Fiber.yield
+    else
+      pop_pending
+    end
+  end
+
+  def collect(count=0)
+    if count == 0
+      collect_until_choke
+    else
+      collect_until_count count
+    end
+  end
+
+  private
   def register_fiber(channel)
     fb = Fiber.current
 
@@ -34,23 +50,7 @@ class Cocaine::Synchrony::Channel
     }
   end
 
-  def read
-    if @pending.empty?
-      Fiber.yield
-    else
-      pop_pending
-    end
-  end
-
-  def collect(count=0)
-    if count == 0
-      collect_until_choke
-    else
-      collect_until_count count
-    end
-  end
-
-  :private
+  private
   def pop_pending
     chunk = @pending.pop
     if chunk.instance_of? Exception
@@ -60,7 +60,7 @@ class Cocaine::Synchrony::Channel
     end
   end
 
-  :private
+  private
   def collect_until_count(count)
     chunks = []
     while count > 0
@@ -70,7 +70,7 @@ class Cocaine::Synchrony::Channel
     chunks
   end
 
-  :private
+  private
   def collect_until_choke
     chunks = []
     loop do

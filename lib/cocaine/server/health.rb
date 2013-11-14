@@ -64,7 +64,7 @@ class Cocaine::HealthManager
     @disown.cancel
   end
 
-  :private
+  private
   def exhale
     $log.debug '[<-] doing exhale'
     @disown.start {

@@ -23,14 +23,14 @@ class Cocaine::Sandbox
     end
   end
 
-  :private
+  private
   def invoke_handler(event, request, response)
     $log.debug "invoking '#{event}'"
     handler = @handlers[event]
     handler.execute(request, response)
   end
 
-  :private
+  private
   def write_error(errno, reason, response)
     response.error errno, reason
     response.close
