@@ -137,10 +137,23 @@ describe Cocaine::ChannelZipper do
     channel = Cocaine::Channel.new
     zipper = Cocaine::ChannelZipper.new channel
     zipper.callback { |r|
-      expect(r.get()).to eq('test')
+      expect(r.get).to eq('test')
       flag = true
     }
     channel.trigger('test')
+
+    expect(flag).to be true
+  end
+
+  it 'should merge errorbacks' do
+    flag = false
+    channel = Cocaine::Channel.new
+    zipper = Cocaine::ChannelZipper.new channel
+    zipper.callback { |r|
+      expect { r.get }.to raise_error(Exception)
+      flag = true
+    }
+    channel.error(Exception.new 'test')
 
     expect(flag).to be true
   end
