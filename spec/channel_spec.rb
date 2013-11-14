@@ -128,7 +128,20 @@ end
 
 describe Cocaine::ChannelZipper do
   it 'should be' do
-    channel = double()
+    channel = Cocaine::Channel.new
     Cocaine::ChannelZipper.new channel
+  end
+
+  it 'should merge callbacks' do
+    flag = false
+    channel = Cocaine::Channel.new
+    zipper = Cocaine::ChannelZipper.new channel
+    zipper.callback { |r|
+      expect(r.get()).to eq('test')
+      flag = true
+    }
+    channel.trigger('test')
+
+    expect(flag).to be true
   end
 end
