@@ -18,7 +18,16 @@ class Cocaine::Synchrony::Channel
     future.get
   end
 
-  # todo: maybe make some kind of generator method?
+  def each
+    loop do
+      begin
+        yield Fiber.yield.get
+      rescue ChokeEvent
+        return
+      end
+    end
+  end
+
   def collect(count=0)
     if count == 0
       collect_until_choke
@@ -41,15 +50,13 @@ class Cocaine::Synchrony::Channel
 
   private
   def collect_until_count(count)
-    futures = []
-    while count > 0
-      futures.push Fiber.yield
-      count -= 1
-    end
-
     results = []
-    futures.each do |future|
-      results.push future.get
+    each do |chunk|
+      results.push chunk
+      count -= 1
+      if count == 0
+        break
+      end
     end
     results
   end
@@ -57,13 +64,8 @@ class Cocaine::Synchrony::Channel
   private
   def collect_until_choke
     results = []
-    loop do
-      future = Fiber.yield
-      begin
-        results.push future.get
-      rescue ChokeEvent
-        break
-      end
+    each do |chunk|
+      results.push chunk
     end
     results
   end

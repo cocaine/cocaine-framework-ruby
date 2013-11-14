@@ -115,6 +115,19 @@ describe Cocaine::Synchrony::Service do
     end
   end
 
+  example 'synchrony usage of streaming echo service with each' do
+    EM.synchrony do
+      service = Cocaine::Synchrony::Service.new 'echo-ruby'
+      ch = service.enqueue('ping-streaming', 'message')
+      results = []
+      ch.each do |result|
+        results.push result
+      end
+      expect(results).to eq(['message', 'message!', 'message! :)'])
+      EM.stop
+    end
+  end
+
   example 'synchrony usage of service with wrong event name' do
     EM.synchrony do
       service = Cocaine::Synchrony::Service.new 'echo-ruby'
