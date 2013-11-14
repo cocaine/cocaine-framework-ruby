@@ -25,7 +25,7 @@ class Cocaine::Connection < EventMachine::Connection
   def receive_data(raw_data)
     @decoder.feed(raw_data) do |id, session, data|
       message = Cocaine::ProtocolFactory.create(id, data)
-      $log.debug "received: #{message}"
+      $log.debug "received: [#{session}] #{message}"
       @on_message.call session, message
     end
   end

@@ -50,8 +50,6 @@ describe Cocaine::Service do
         service.list.callback {
           flag = true
           EM.stop
-        }.errback {
-          EM.stop
         }
       }.errback {
         fail()
@@ -67,6 +65,7 @@ describe Cocaine::Synchrony::Service do
     EM.synchrony do
       service = Cocaine::Synchrony::Service.new 'echo-ruby'
       ch = service.enqueue('ping', 'message')
+      puts 1
       msg = ch.read
       expect(msg).to eq('message')
       EM.stop

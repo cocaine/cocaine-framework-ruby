@@ -76,8 +76,13 @@ class Cocaine::Locator < Cocaine::AbstractService
   def do_resolve(name, df)
     $log.debug "resolving service '#{name}'"
     channel = invoke 0, name
-    channel.callback { |result| df.succeed result }
-    channel.errback { |err| df.fail err }
+    channel.callback do |future|
+      begin
+        df.succeed future.get
+      rescue Exception => err
+        df.fail err
+      end
+    end
   end
 end
 

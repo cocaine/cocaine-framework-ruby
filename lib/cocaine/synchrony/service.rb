@@ -6,8 +6,13 @@ module Cocaine::Synchrony
   def self.sync(df)
     fb = Fiber.current
     df.callback { |result| fb.resume result }
-    df.errback { |err| raise ServiceError.new err }
-    Fiber.yield
+    df.errback { |err| fb.resume ServiceError.new err }
+    result = Fiber.yield
+    if result.instance_of? Exception
+      raise result
+    else
+      result
+    end
   end
 end
 

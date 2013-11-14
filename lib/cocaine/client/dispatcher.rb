@@ -1,5 +1,6 @@
-require 'cocaine/dispatcher'
+require 'cocaine/asio/channel/combiner'
 require 'cocaine/asio/channel/manager'
+require 'cocaine/dispatcher'
 
 $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
@@ -16,7 +17,7 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
     session, channel = @channels.create
     message = MessagePack::pack([method_id, session, data])
     @conn.send_data message
-    channel
+    Cocaine::ChannelCombiner.new channel
   end
 
   protected
@@ -26,9 +27,9 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
       when RPC::CHUNK
         channel.trigger unpack_chunk message.data
       when RPC::ERROR
-        channel.error [message.errno, message.reason]
+        channel.error ServiceError.new "[#{message.errno}] #{message.reason}"
       when RPC::CHOKE
-        channel.error message
+        channel.error ChokeEvent.new
         channel.close
       else
         raise "unexpected message id: #{message.id}"

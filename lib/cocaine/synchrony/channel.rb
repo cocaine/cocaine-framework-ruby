@@ -11,19 +11,14 @@ class Cocaine::Synchrony::Channel
 
   def read
     if @pending.empty?
-      result = Fiber.yield
-      if result.instance_of? Choke
-        result
-      elsif result.instance_of? Exception
-        raise result
-      else
-        result
-      end
+      future = Fiber.yield
     else
-      pop_pending
+      future = @pending.pop
     end
+    future.get
   end
 
+  # todo: maybe make some kind of generator method?
   def collect(count=0)
     if count == 0
       collect_until_choke
@@ -35,56 +30,41 @@ class Cocaine::Synchrony::Channel
   private
   def register_fiber(channel)
     fb = Fiber.current
-
-    channel.callback { |result|
+    channel.callback { |future|
       if fb.alive?
-        fb.resume result
+        fb.resume future
       else
-        @pending.push result
+        @pending.push future
       end
     }
-
-    channel.errback { |err|
-      if fb.alive?
-        if err.instance_of? Choke
-          fb.resume err
-        else
-          fb.resume ServiceError.new err
-        end
-      else
-        @pending.push err
-      end
-    }
-  end
-
-  private
-  def pop_pending
-    chunk = @pending.pop
-    if chunk.instance_of? Exception
-      raise chunk
-    else
-      chunk
-    end
   end
 
   private
   def collect_until_count(count)
-    chunks = []
+    futures = []
     while count > 0
-      chunks.push Fiber.yield
+      futures.push Fiber.yield
       count -= 1
     end
-    chunks
+
+    results = []
+    futures.each do |future|
+      results.push future.get
+    end
+    results
   end
 
   private
   def collect_until_choke
-    chunks = []
+    results = []
     loop do
-      chunk = Fiber.yield
-      break if chunk.instance_of? Choke
-      chunks.push chunk
+      future = Fiber.yield
+      begin
+        results.push future.get
+      rescue ChokeEvent
+        break
+      end
     end
-    chunks
+    results
   end
 end
