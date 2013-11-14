@@ -1,7 +1,7 @@
 require 'rspec'
 
 require_relative '../lib/cocaine/channel'
-require_relative '../lib/cocaine/asio/zipper'
+require_relative '../lib/cocaine/asio/combiner'
 
 describe Cocaine::Channel do
   it 'should invoke callback immediately if it has pending data' do
@@ -126,16 +126,16 @@ describe Cocaine::Channel, '#collect' do
 end
 
 
-describe Cocaine::ChannelZipper do
+describe Cocaine::ChannelCombiner do
   it 'should be' do
     channel = Cocaine::Channel.new
-    Cocaine::ChannelZipper.new channel
+    Cocaine::ChannelCombiner.new channel
   end
 
   it 'should merge callbacks' do
     flag = false
     channel = Cocaine::Channel.new
-    zipper = Cocaine::ChannelZipper.new channel
+    zipper = Cocaine::ChannelCombiner.new channel
     zipper.callback { |r|
       expect(r.get).to eq('test')
       flag = true
@@ -148,7 +148,7 @@ describe Cocaine::ChannelZipper do
   it 'should merge errorbacks' do
     flag = false
     channel = Cocaine::Channel.new
-    zipper = Cocaine::ChannelZipper.new channel
+    zipper = Cocaine::ChannelCombiner.new channel
     zipper.callback { |r|
       expect { r.get }.to raise_error(Exception)
       flag = true

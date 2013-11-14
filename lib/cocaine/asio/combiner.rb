@@ -1,6 +1,6 @@
 require 'cocaine/future'
 
-class Cocaine::ChannelZipper
+class Cocaine::ChannelCombiner
   def initialize(channel)
     channel = channel
     channel.callback { |result|
