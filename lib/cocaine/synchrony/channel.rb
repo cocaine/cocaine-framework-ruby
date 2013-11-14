@@ -11,7 +11,14 @@ class Cocaine::Synchrony::Channel
 
   def read
     if @pending.empty?
-      Fiber.yield
+      result = Fiber.yield
+      if result.instance_of? Choke
+        result
+      elsif result.instance_of? Exception
+        raise result
+      else
+        result
+      end
     else
       pop_pending
     end
@@ -42,7 +49,7 @@ class Cocaine::Synchrony::Channel
         if err.instance_of? Choke
           fb.resume err
         else
-          raise ServiceError.new err
+          fb.resume ServiceError.new err
         end
       else
         @pending.push err

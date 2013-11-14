@@ -115,4 +115,18 @@ describe Cocaine::Synchrony::Service do
       EM.stop
     end
   end
+
+  example 'synchrony usage of service with wrong event name' do
+    EM.synchrony do
+      service = Cocaine::Synchrony::Service.new 'echo-ruby'
+      ch = service.enqueue('ping-wrong', 'message')
+      begin
+        ch.read
+      rescue ServiceError => err
+        puts err
+      end
+      #expect { ch.read }.to raise_error(ServiceError)
+      EM.stop
+    end
+  end
 end
