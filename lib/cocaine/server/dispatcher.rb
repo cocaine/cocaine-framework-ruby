@@ -14,6 +14,31 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
     @channels = {}
   end
 
+  def send_handshake(session, uuid)
+    send Handshake.new(uuid), session
+  end
+
+  def send_heartbeat(session)
+    send Heartbeat.new, session
+  end
+
+  def send_terminate(session, errno, reason)
+    send Terminate.new(errno, reason), session
+  end
+
+  def send_chunk(session, data)
+    send Chunk.new(data), session
+  end
+
+  def send_error(session, errno, reason)
+    send Error.new(errno, reason), session
+  end
+
+  def send_choke(session)
+    send Choke.new, session
+  end
+
+  protected
   def process(session, message)
     case message.id
       when RPC::HEARTBEAT
@@ -38,30 +63,6 @@ class Cocaine::WorkerDispatcher < Cocaine::Dispatcher
       else
         raise "unexpected message id: #{id}"
     end
-  end
-
-  def send_handshake(session, uuid)
-    send Handshake.new(uuid), session
-  end
-
-  def send_heartbeat(session)
-    send Heartbeat.new, session
-  end
-
-  def send_terminate(session, errno, reason)
-    send Terminate.new(errno, reason), session
-  end
-
-  def send_chunk(session, data)
-    send Chunk.new(data), session
-  end
-
-  def send_error(session, errno, reason)
-    send Error.new(errno, reason), session
-  end
-
-  def send_choke(session)
-    send Choke.new, session
   end
 
   private

@@ -11,6 +11,15 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
     @channels = Cocaine::ChannelManager.new
   end
 
+  def invoke(method_id, *data)
+    $log.debug("invoking #{method_id} with #{data}")
+    session, channel = @channels.create
+    message = MessagePack::pack([method_id, session, data])
+    @conn.send_data message
+    channel
+  end
+
+  protected
   def process(session, message)
     channel = @channels[session]
     case message.id
@@ -24,14 +33,6 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
       else
         raise "unexpected message id: #{message.id}"
     end
-  end
-
-  def invoke(method_id, *data)
-    $log.debug("invoking #{method_id} with #{data}")
-    session, channel = @channels.create
-    message = MessagePack::pack([method_id, session, data])
-    @conn.send_data message
-    channel
   end
 
   private

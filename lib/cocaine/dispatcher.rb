@@ -12,6 +12,7 @@ class Cocaine::Dispatcher
     end
   end
 
+  protected
   def process(session, message)
     raise NotImplementedError
   end
