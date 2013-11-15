@@ -6,6 +6,7 @@ require 'eventmachine'
 
 require 'cocaine/asio/channel'
 require 'cocaine/asio/connection'
+require 'cocaine/client/error'
 require 'cocaine/protocol'
 
 
@@ -20,10 +21,6 @@ end
 
 $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
-
-
-class ServiceError < Exception
-end
 
 
 class Cocaine::AbstractService
