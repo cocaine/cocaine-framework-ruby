@@ -1,5 +1,5 @@
-require 'net/http'
 require 'cgi'
+require 'net/http'
 
 require 'cocaine/namespace'
 
