@@ -5,13 +5,26 @@ require 'cocaine/synchrony/channel'
 module Cocaine::Synchrony
   def self.sync(df)
     fb = Fiber.current
-    df.callback { |result| fb.resume result }
-    df.errback { |err| fb.resume ServiceError.new err }
+    df.callback do |result|
+      if fb == Fiber.current
+        return result
+      else
+        fb.resume result
+      end
+    end
+
+    df.errback do |err|
+      if fb == Fiber.current
+        raise Cocaine::ServiceError.new err
+      else
+        fb.resume Cocaine::ServiceError.new err
+      end
+    end
     result = Fiber.yield
     if result.is_a? Exception
       raise result
     else
-      result
+      return result
     end
   end
 end

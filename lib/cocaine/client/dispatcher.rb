@@ -27,7 +27,7 @@ class Cocaine::ClientDispatcher < Cocaine::Dispatcher
       when RPC::CHUNK
         channel.trigger unpack_chunk message.data
       when RPC::ERROR
-        channel.error ServiceError.new "[#{message.errno}] #{message.reason}"
+        channel.error Cocaine::ServiceError.new "[#{message.errno}] #{message.reason}"
       when RPC::CHOKE
         channel.error ChokeEvent.new
         channel.close

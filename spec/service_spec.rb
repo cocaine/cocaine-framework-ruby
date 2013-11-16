@@ -34,7 +34,7 @@ describe Cocaine::Locator do
         expect(api).to eq({0=>'start_app',1 => 'pause_app', 2 => 'list'})
         EM.stop()
       }.errback {
-        fail()
+        fail('Test Failed')
         EM.stop()
       }
     end
@@ -52,7 +52,7 @@ describe Cocaine::Service do
           EM.stop
         }
       }.errback {
-        fail()
+        fail('Test Failed')
         EM.stop
       }
     end
@@ -65,7 +65,6 @@ describe Cocaine::Synchrony::Service do
     EM.synchrony do
       service = Cocaine::Synchrony::Service.new 'echo-ruby'
       ch = service.enqueue('ping', 'message')
-      puts 1
       msg = ch.read
       expect(msg).to eq('message')
       EM.stop
@@ -132,14 +131,14 @@ describe Cocaine::Synchrony::Service do
     EM.synchrony do
       service = Cocaine::Synchrony::Service.new 'echo-ruby'
       ch = service.enqueue('ping-wrong', 'message')
-      expect { ch.read }.to raise_error(ServiceError)
+      expect { ch.read }.to raise_error(Cocaine::ServiceError)
       EM.stop
     end
   end
 
   example 'synchrony throws exception when service is not available' do
     EM.synchrony do
-      expect { Cocaine::Synchrony::Service.new 'non-existing-app' }.to raise_error(ServiceError)
+      expect { Cocaine::Synchrony::Service.new 'non-existing-app' }.to raise_error(Cocaine::ServiceError)
       EM.stop
     end
   end

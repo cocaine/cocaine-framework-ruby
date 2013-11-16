@@ -6,6 +6,7 @@ require 'eventmachine'
 
 require 'cocaine/asio/channel'
 require 'cocaine/asio/connection'
+require 'cocaine/client/dispatcher'
 require 'cocaine/client/error'
 require 'cocaine/protocol'
 
@@ -42,7 +43,7 @@ class Cocaine::AbstractService
     EM.connect *endpoint, Cocaine::Connection do |conn|
       if !!conn.error?
         $log.debug "failed to connect to the '#{@name}' service at #{endpoint}"
-        df.fail
+        df.fail Cocaine::ConnectionError.new
       else
         $log.debug "connection established with service '#{@name}' at #{endpoint}"
         @dispatcher = Cocaine::ClientDispatcher.new conn
