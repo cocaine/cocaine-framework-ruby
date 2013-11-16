@@ -136,4 +136,11 @@ describe Cocaine::Synchrony::Service do
       EM.stop
     end
   end
+
+  example 'synchrony throws exception when service is not available' do
+    EM.synchrony do
+      expect { Cocaine::Synchrony::Service.new 'non-existing-app' }.to raise_error(ServiceError)
+      EM.stop
+    end
+  end
 end

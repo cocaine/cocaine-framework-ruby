@@ -8,7 +8,7 @@ module Cocaine::Synchrony
     df.callback { |result| fb.resume result }
     df.errback { |err| fb.resume ServiceError.new err }
     result = Fiber.yield
-    if result.instance_of? Exception
+    if result.is_a? Exception
       raise result
     else
       result
