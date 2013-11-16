@@ -20,6 +20,7 @@ module Cocaine::Synchrony
         fb.resume Cocaine::ServiceError.new err
       end
     end
+
     result = Fiber.yield
     if result.is_a? Exception
       raise result
