@@ -10,4 +10,5 @@ Framework provides next features:
  * ability to use other Cloud services or apps.
  * explicit future-based asynchronous backend to maximize performance without using threads.
  * fiber-aware asynchronous backend to make your asynchronous code look like it is synchronous.
+ * integration with our http-proxy for simple applications.
  * [In the nearest future], Ruby on Rails support.
