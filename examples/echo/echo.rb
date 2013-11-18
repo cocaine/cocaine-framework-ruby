@@ -37,14 +37,14 @@ class HttpEcho
 
   def execute(request, response)
     df = request.read
-    df.callback { |rq|
+    df.callback do |rq|
       msg = rq.query['message']
       $log.debug "Message: #{rq.query}"
       $log.debug "Message: #{msg}"
       response.write_headers(200, ['Content-Type', 'plain/text'])
       response.body = msg
       response.close
-    }
+    end
   end
   http :execute
 end
