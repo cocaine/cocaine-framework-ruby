@@ -4,6 +4,8 @@ Introducing cocaine-framework-ruby
 Here you are, almighty Ruby programmers! Introducing another framework for our Cocaine Cloud.
 This time it is cocaine-framework-ruby.
 
+ * Requires at least Ruby 1.9
+
 Framework provides next features:
 
  * ability to create your own apps and upload it to the Cloud.
