@@ -11,12 +11,17 @@ class Hook
   attr_reader :callbacks
   def initialize
     @callbacks = {
-        :connected => lambda {}
+        :connected => lambda {},
+        :message => {}
     }
   end
 
   def connected(&block)
     @callbacks[:connected] = block
+  end
+
+  def message(request, &block)
+    @callbacks[:message][request] = block
   end
 end
 
@@ -38,23 +43,30 @@ class CocaineRuntimeMock
     def receive_data(data)
       unpacker ||= MessagePack::Unpacker.new
       unpacker.feed_each data do |chunk|
-        $log.debug "received data: #{chunk}"
-        return unless @responses.has_key? chunk
-
         id, session, data = chunk
         $log.debug "received message: [#{id}, #{session}, #{data}]"
 
-        response = @responses[chunk]
-        $log.debug "iterating over response: #{response}"
-        response.each do |ch|
-          if ch.is_a? Error
-            send_data ch.pack session
-          else
-            send_data (Chunk.new ch.to_msgpack).pack session
-          end
+        if @hook.callbacks[:message].has_key? chunk
+          response = @hook.callbacks[:message][chunk].call
+          send_response session, response
+        elsif @responses.has_key? chunk
+          response = @responses[chunk]
+          send_response session, response
         end
-        send_data Choke.new.pack session
       end
+    end
+
+    private
+    def send_response(session, response)
+      $log.debug "iterating over response: #{response}"
+      response.each do |chunk|
+        if chunk.is_a? Error
+          send_data chunk.pack session
+        else
+          send_data (Chunk.new chunk.to_msgpack).pack session
+        end
+      end
+      send_data Choke.new.pack session
     end
   end
 

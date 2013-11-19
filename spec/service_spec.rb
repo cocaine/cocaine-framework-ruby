@@ -71,15 +71,17 @@ describe Cocaine::Service do
       expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'start_app', 1 => 'pause_app', 2 => 'list'}}
       server = CocaineRuntimeMock.new
       server.register 'node', 1, expected
-      server.on 'node', [2, 1, []], []
+      #server.on 'node', [2, 1, []], []
+      server.when('node').message([2, 1, []]) do
+        flag = true
+        EM.stop
+        ['app']
+      end
       server.run
 
       node = Cocaine::Service.new 'node'
       node.connect.callback {
-        node.list.callback { |result|
-          flag = true
-          EM.stop
-        }
+        node.list
       }.errback { |err|
         fail("Failed: #{err}")
         EM.stop
