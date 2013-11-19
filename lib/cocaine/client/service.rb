@@ -41,13 +41,15 @@ class Cocaine::AbstractService
   def connect_to_endpoint(*endpoint)
     df = EM::DefaultDeferrable.new
     EM.connect *endpoint, Cocaine::Connection do |conn|
-      if !!conn.error?
-        $log.debug "failed to connect to the '#{@name}' service at #{endpoint}"
-        df.fail Cocaine::ConnectionError.new
-      else
+      conn.hooks :connected do
         $log.debug "connection established with service '#{@name}' at #{endpoint}"
         @dispatcher = Cocaine::ClientDispatcher.new conn
         df.succeed
+      end
+
+      conn.hooks :disconnected do
+        $log.debug "failed to connect to the '#{@name}' service at #{endpoint}"
+        df.fail Cocaine::ConnectionError.new
       end
     end
     df

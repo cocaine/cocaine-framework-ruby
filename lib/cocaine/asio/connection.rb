@@ -12,10 +12,24 @@ class Cocaine::Connection < EventMachine::Connection
   def initialize(decoder=nil)
     @decoder = decoder || Cocaine::Decoder.new
     @state = :connecting
+    @hooks = {
+        connected: Proc.new {},
+        disconnected: Proc.new {}
+    }
   end
 
-  def post_init
+  def connection_completed
     @state = :connected
+    @hooks[@state].call
+  end
+
+  def unbind
+    @state = :disconnected
+    @hooks[@state].call error?
+  end
+
+  def hooks(type, &block)
+    @hooks[type] = block
   end
 
   def on_message(&block)
