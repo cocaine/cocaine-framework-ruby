@@ -23,10 +23,10 @@ end
 
 class CocaineRuntimeMock
   module Server
-    def initialize(name, responses={}, hook=nil, options={})
+    def initialize(name, responses=nil, hook=nil, options={})
       $log.debug "new connection for '#{name}'"
       @name = name
-      @responses = responses
+      @responses = responses || {}
       @hook = hook || Hook.new
       @options = options
     end
