@@ -3,29 +3,46 @@ require 'logger'
 
 require 'cocaine/synchrony/service'
 
-$log = Logger.new(STDERR)
+$log = Logger.new(STDOUT)
 $log.level = Logger::DEBUG
+
+
+class Hook
+  attr_reader :callbacks
+  def initialize
+    @callbacks = {
+        :connected => lambda {}
+    }
+  end
+
+  def connected(&block)
+    @callbacks[:connected] = block
+  end
+end
+
 
 class CocaineRuntimeMock
   module Server
-    def initialize(name='locator', options={})
+    def initialize(name, responses={}, hook=nil, options={})
       $log.debug "new connection for '#{name}'"
       @name = name
+      @responses = responses
+      @hook = hook || Hook.new
       @options = options
-      @responses = {}
     end
 
     def post_init
-      $log.debug 'connection accepted'
+      @hook.callbacks[:connected].call
     end
 
     def receive_data(data)
-      up ||= MessagePack::Unpacker.new
-      up.feed_each data do |chunk|
+      unpacker ||= MessagePack::Unpacker.new
+      unpacker.feed_each data do |chunk|
         $log.debug "received data: #{chunk}"
         return unless @responses.has_key? chunk
 
         id, session, data = chunk
+        $log.debug "received message: [#{id}, #{session}, #{data}]"
 
         response = @responses[chunk]
         $log.debug "iterating over response: #{response}"
@@ -39,10 +56,6 @@ class CocaineRuntimeMock
         send_data Choke.new.pack session
       end
     end
-
-    def on(handlers)
-      @responses = handlers
-    end
   end
 
   def initialize(options = {})
@@ -50,8 +63,10 @@ class CocaineRuntimeMock
 
     @host = options[:host]
     @port = options[:port]
+
     @services = {}
     @responses = {}
+    @hooks = {}
 
     @servers = []
 
@@ -76,13 +91,14 @@ class CocaineRuntimeMock
     @responses[name][request] = response
   end
 
+  def when(name)
+    @hooks[name] ||= Hook.new
+  end
+
   def run
     @services.each do |name, options|
       $log.debug "starting '#{name}' service at #{options[:endpoint]}"
-      sig = EM::start_server *options[:endpoint], Server, name, options do |server|
-        server.on @responses[name]
-      end
-
+      sig = EM::start_server *options[:endpoint], Server, name, @responses[name], @hooks[name], options
       @servers.push sig
     end
   end

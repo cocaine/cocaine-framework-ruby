@@ -47,22 +47,42 @@ describe Cocaine::Locator do
 end
 
 describe Cocaine::Service do
-  example 'using node service' do
+  #it 'should provide methods dynamically' do
+  it 'should connect to the provided endpoint' do
     flag = false
     EM.run do
-      service = Cocaine::Service.new 'node'
-      service.connect.callback {
-        service.list.callback {
-          flag = true
-          EM.stop
-        }
-      }.errback {
-        fail('Test Failed')
+
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'start_app', 1 => 'pause_app', 2 => 'list'}}
+      server = CocaineRuntimeMock.new
+      server.register 'node', 1, expected
+      server.when('node').connected do
+        flag = true
         EM.stop
-      }
+      end
+      server.run
+
+      node = Cocaine::Service.new 'node'
+      node.connect
     end
     expect(flag).to be true
   end
+
+  #example 'using node service' do
+  #  flag = false
+  #  EM.run do
+  #    service = Cocaine::Service.new 'node'
+  #    service.connect.callback {
+  #      service.list.callback {
+  #        flag = true
+  #        EM.stop
+  #      }
+  #    }.errback {
+  #      fail('Failed')
+  #      EM.stop
+  #    }
+  #  end
+  #  expect(flag).to be true
+  #end
 end
 
 describe Cocaine::Synchrony::Service do
