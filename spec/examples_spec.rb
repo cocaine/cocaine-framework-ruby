@@ -11,7 +11,7 @@ require_relative '../lib/cocaine/synchrony/service'
 #      EM.stop
 #    end
 #  end
-#
+
 #  example 'synchrony usage of streaming echo service' do
 #    EM.synchrony do
 #      service = Cocaine::Synchrony::Service.new 'echo-ruby'
@@ -24,7 +24,7 @@ require_relative '../lib/cocaine/synchrony/service'
 #      EM.stop
 #    end
 #  end
-#
+
 #  example 'synchrony usage of streaming echo service with partial collect method' do
 #    EM.synchrony do
 #      service = Cocaine::Synchrony::Service.new 'echo-ruby'

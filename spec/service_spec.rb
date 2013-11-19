@@ -123,4 +123,23 @@ describe Cocaine::Synchrony::Service do
       EM.stop
     end
   end
+
+  it 'should synchrony read exactly three chunks' do
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'enqueue', 1 => 'info'}}
+      server = CocaineRuntimeMock.new
+      server.register 'mock-app', 1, expected
+      server.when('mock-app').message([0, 1, ['ping', 'message']]) { ['chunk#1', 'chunk#2', 'chunk#3'] }
+      server.run
+
+      service = Cocaine::Synchrony::Service.new 'mock-app'
+      ch = service.enqueue('ping', 'message')
+      msg = [nil] * 3
+      msg[0] = ch.read
+      msg[1] = ch.read
+      msg[2] = ch.read
+      expect(msg).to eq(['chunk#1', 'chunk#2', 'chunk#3'])
+      EM.stop
+    end
+  end
 end
