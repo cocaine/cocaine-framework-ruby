@@ -121,6 +121,10 @@ describe Cocaine::Service do
       }
     end
   end
+
+  it 'should return error if service throws error' do
+    fail()
+  end
 end
 
 describe Cocaine::Synchrony::Service do
@@ -139,6 +143,10 @@ describe Cocaine::Synchrony::Service do
       Cocaine::Synchrony::Service.new 'mock-app'
     end
     expect(flag).to be true
+  end
+
+  it 'should throw error on connect failure' do
+    fail()
   end
 
   it 'should synchrony read exactly one chunk' do
@@ -174,5 +182,25 @@ describe Cocaine::Synchrony::Service do
       expect(msg).to eq(['chunk#1', 'chunk#2', 'chunk#3'])
       EM.stop
     end
+  end
+
+  it 'should synchrony partial read chunks via collect' do
+    fail
+  end
+
+  it 'should synchrony fully read chunks via collect' do
+    fail
+  end
+
+  it 'should synchrony read chunks until choke' do
+    fail
+  end
+
+  it 'should synchrony iterate chunks with each method' do
+    fail
+  end
+
+  it 'should throw error on error received' do
+    fail
   end
 end
