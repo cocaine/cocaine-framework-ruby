@@ -9,22 +9,6 @@ require_relative 'stub_server'
 
 
 describe Cocaine::Locator do
-  it 'should send correct message to the server' do
-    EM.run do
-      response = [RPC::CHUNK, 1, [[], 1, {}].to_msgpack].to_msgpack
-      stub = StubServer.new(host: 'localhost', port: 20053, response: response)
-      stub.on_receive { |actual| actual.equal? [0, 1, %w(node)].to_msgpack }
-
-      locator = Cocaine::Locator.new 'localhost', 20053
-      df = locator.resolve 'node'
-      df.callback {
-        EM.stop
-      }.errback {
-        fail
-      }
-    end
-  end
-
   it 'should send correct message to the locator while resolving service' do
     EM.run do
       expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'start_app', 1 => 'pause_app', 2 => 'list'}}
