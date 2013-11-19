@@ -32,7 +32,7 @@ describe Cocaine::Locator do
   it 'should trigger errorback if locator cannot be reached' do
     EM.run do
       locator = Cocaine::Locator.new
-      locator.resolve('node').callback {
+      locator.resolve('node-when-locator-not-reached').callback {
         fail('Failed')
         EM.stop()
       }.errback { |err|
@@ -101,6 +101,25 @@ describe Cocaine::Service do
       }
     end
     expect(flag).to be true
+  end
+
+  it 'should return error if service cannot be reached' do
+    EM.synchrony do
+      server = CocaineRuntimeMock.new
+      server.on 'locator',
+                [0, 1, ['node']],
+                [[['127.0.0.1', 10054], 1, {0 => 'start_app', 1 => 'pause_app', 2 => 'list'}]]
+      server.run
+
+      node = Cocaine::Service.new 'node'
+      node.connect.callback {
+        fail('Failed')
+        EM.stop
+      }.errback { |err|
+        expect(err).to be_a(Cocaine::ConnectionError)
+        EM.stop
+      }
+    end
   end
 end
 
