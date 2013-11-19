@@ -28,6 +28,19 @@ describe Cocaine::Locator do
       }
     end
   end
+
+  it 'should trigger errorback if locator cannot be reached' do
+    EM.run do
+      locator = Cocaine::Locator.new
+      locator.resolve('node').callback {
+        fail('Failed')
+        EM.stop()
+      }.errback { |err|
+        expect(err).to eq(Cocaine::ConnectionError.new)
+        EM.stop()
+      }
+    end
+  end
 end
 
 describe Cocaine::Service do
