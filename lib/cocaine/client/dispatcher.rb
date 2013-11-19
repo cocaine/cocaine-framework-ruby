@@ -1,5 +1,6 @@
 require 'cocaine/asio/channel/combiner'
 require 'cocaine/asio/channel/manager'
+require 'cocaine/client/error'
 require 'cocaine/dispatcher'
 
 $log = Logger.new(STDERR)

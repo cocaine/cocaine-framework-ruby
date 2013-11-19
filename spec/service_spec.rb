@@ -41,6 +41,23 @@ describe Cocaine::Locator do
       }
     end
   end
+
+  it 'should trigger errorback is service can not be resolved' do
+    EM.run do
+      server = CocaineRuntimeMock.new
+      server.on 'locator', [0, 1, ['node']], [Error.new(1, 'service is not available')]
+      server.run
+
+      locator = Cocaine::Locator.new
+      locator.resolve('node').callback {
+        fail('Failed')
+        EM.stop()
+      }.errback { |err|
+        expect(err).to be_a(Cocaine::ServiceError)
+        EM.stop()
+      }
+    end
+  end
 end
 
 describe Cocaine::Service do
