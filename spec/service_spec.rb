@@ -122,8 +122,31 @@ describe Cocaine::Service do
     end
   end
 
-  it 'should return error if service throws error' do
-    fail()
+  it 'should return future with error if service throws error' do
+    counter = 0
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'list'}}
+      server = CocaineRuntimeMock.new
+      server.register 'node', 1, expected
+      server.when('node').message([0, 1, []]) do
+        [Error.new(1, 'wtf')]
+      end
+      server.run
+
+      expected = [Cocaine::ServiceError, ChokeEvent]
+      node = Cocaine::Service.new 'node'
+      node.connect.callback {
+        node.list.callback { |future|
+          expect { future.get }.to raise_error expected[counter]
+          counter += 1
+          EM.stop if counter == 2
+        }
+      }.errback {
+        fail('Failed')
+        EM.stop
+      }
+    end
+    expect(counter).to be 2
   end
 end
 
