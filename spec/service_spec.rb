@@ -3,6 +3,7 @@ require 'rspec'
 require_relative '../lib/cocaine/client/service'
 require_relative '../lib/cocaine/protocol'
 require_relative '../lib/cocaine/synchrony/service'
+require_relative '../lib/cocaine/testing/mock_server'
 
 require_relative 'stub_server'
 
@@ -24,17 +25,21 @@ describe Cocaine::Locator do
     end
   end
 
-  example 'resolving node service' do
+  it 'should send correct message to the locator while resolving service' do
     EM.run do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'start_app', 1 => 'pause_app', 2 => 'list'}}
+      server = CocaineRuntimeMock.new
+      server.register 'node', 1, expected
+      server.run
+
       locator = Cocaine::Locator.new
       locator.resolve('node').callback { |endpoint, version, api|
-        expect(endpoint[0]).to be_a(String)
-        expect(1024 <= endpoint[1] && endpoint[1] <= 65535).to be true
-        expect(version).to eq(1)
-        expect(api).to eq({0=>'start_app',1 => 'pause_app', 2 => 'list'})
+        expect(endpoint).to eq(expected[:endpoint])
+        expect(version).to eq(expected[:version])
+        expect(api).to eq(expected[:api])
         EM.stop()
       }.errback {
-        fail('Test Failed')
+        fail('Failed')
         EM.stop()
       }
     end
