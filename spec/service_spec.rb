@@ -168,8 +168,24 @@ describe Cocaine::Synchrony::Service do
     expect(flag).to be true
   end
 
+  it 'should throw error on locator connect failure' do
+    EM.synchrony do
+      expect { Cocaine::Synchrony::Service.new 'mock-app' }.to raise_error Cocaine::ConnectionError
+      EM.stop
+    end
+  end
+
   it 'should throw error on connect failure' do
-    fail()
+    EM.synchrony do
+      server = CocaineRuntimeMock.new
+      server.on 'locator',
+                [0, 1, ['mock-app']],
+                [[['127.0.0.1', 10054], 1, {0 => 'start_app', 1 => 'pause_app', 2 => 'list'}]]
+      server.run
+
+      expect { Cocaine::Synchrony::Service.new 'mock-app' }.to raise_error Cocaine::ConnectionError
+      EM.stop
+    end
   end
 
   it 'should synchrony read exactly one chunk' do

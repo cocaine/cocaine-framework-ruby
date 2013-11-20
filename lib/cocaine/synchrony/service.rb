@@ -15,9 +15,9 @@ module Cocaine::Synchrony
 
     df.errback do |err|
       if fb == Fiber.current
-        raise Cocaine::ServiceError.new err
+        raise err
       else
-        fb.resume Cocaine::ServiceError.new err
+        fb.resume err
       end
     end
 
