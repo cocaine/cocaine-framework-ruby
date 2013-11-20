@@ -224,22 +224,99 @@ describe Cocaine::Synchrony::Service do
   end
 
   it 'should synchrony partial read chunks via collect' do
-    fail
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'enqueue', 1 => 'info'}}
+      server = CocaineRuntimeMock.new
+      server.register 'mock-app', 1, expected
+      server.when('mock-app').message([0, 1, ['ping', 'message']]) { ['chunk#1', 'chunk#2', 'chunk#3'] }
+      server.run
+
+      service = Cocaine::Synchrony::Service.new 'mock-app'
+      ch = service.enqueue('ping', 'message')
+      actual = ch.collect(2)
+      expect(actual).to eq(['chunk#1', 'chunk#2'])
+      EM.stop
+    end
   end
 
   it 'should synchrony fully read chunks via collect' do
-    fail
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'enqueue', 1 => 'info'}}
+      server = CocaineRuntimeMock.new
+      server.register 'mock-app', 1, expected
+      server.when('mock-app').message([0, 1, ['ping', 'message']]) { ['chunk#1', 'chunk#2', 'chunk#3'] }
+      server.run
+
+      service = Cocaine::Synchrony::Service.new 'mock-app'
+      ch = service.enqueue('ping', 'message')
+      actual = ch.collect(3)
+      expect(actual).to eq(['chunk#1', 'chunk#2', 'chunk#3'])
+      EM.stop
+    end
   end
 
   it 'should synchrony read chunks until choke' do
-    fail
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'enqueue', 1 => 'info'}}
+      server = CocaineRuntimeMock.new
+      server.register 'mock-app', 1, expected
+      server.when('mock-app').message([0, 1, ['ping', 'message']]) { ['chunk#1', 'chunk#2', 'chunk#3'] }
+      server.run
+
+      service = Cocaine::Synchrony::Service.new 'mock-app'
+      ch = service.enqueue('ping', 'message')
+      actual = ch.collect()
+      expect(actual).to eq(['chunk#1', 'chunk#2', 'chunk#3'])
+      EM.stop
+    end
   end
 
   it 'should synchrony iterate chunks with each method' do
-    fail
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'enqueue', 1 => 'info'}}
+      server = CocaineRuntimeMock.new
+      server.register 'mock-app', 1, expected
+      server.when('mock-app').message([0, 1, ['ping', 'message']]) { ['chunk#1', 'chunk#2', 'chunk#3'] }
+      server.run
+
+      results = []
+      service = Cocaine::Synchrony::Service.new 'mock-app'
+      ch = service.enqueue('ping', 'message')
+      ch.each do |result|
+        results.push result
+      end
+      expect(results).to eq(['chunk#1', 'chunk#2', 'chunk#3'])
+      EM.stop
+    end
   end
 
-  it 'should throw error on error received' do
-    fail
+  it 'should throw error on error received while single fetching' do
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'enqueue', 1 => 'info'}}
+      server = CocaineRuntimeMock.new
+      server.register 'mock-app', 1, expected
+      server.when('mock-app').message([0, 1, ['ping', 'message']]) { [Error.new(1, 'Some error occurred')] }
+      server.run
+
+      service = Cocaine::Synchrony::Service.new 'mock-app'
+      ch = service.enqueue('ping', 'message')
+      expect { ch.read }.to raise_error Cocaine::ServiceError
+      EM.stop
+    end
+  end
+
+  it 'should throw error on error received while collect fetching' do
+    EM.synchrony do
+      expected = {endpoint: ['127.0.0.1', 10054], version: 1, api: {0 => 'enqueue', 1 => 'info'}}
+      server = CocaineRuntimeMock.new
+      server.register 'mock-app', 1, expected
+      server.when('mock-app').message([0, 1, ['ping', 'message']]) { ['chunk#1', Error.new(1, 'Some error occurred')] }
+      server.run
+
+      service = Cocaine::Synchrony::Service.new 'mock-app'
+      ch = service.enqueue('ping', 'message')
+      expect { ch.collect }.to raise_error Cocaine::ServiceError
+      EM.stop
+    end
   end
 end
