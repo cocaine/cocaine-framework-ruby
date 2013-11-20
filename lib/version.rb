@@ -1,3 +1,3 @@
 module Cocaine
-  VERSION = '0.11.1.0'
+  VERSION = '0.11.2'
 end
