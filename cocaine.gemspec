@@ -7,7 +7,7 @@ require 'version'
 Gem::Specification.new do |s|
   s.name = 'cocaine'
   s.version = Cocaine::VERSION
-  s.homepage = 'https://github.com/cocaine-framework-ruby'
+  s.homepage = 'https://github.com/cocaine/cocaine-framework-ruby'
   s.licenses = ['Ruby', 'LGPLv3']
 
   s.authors = ['Evgeny Safronov']
