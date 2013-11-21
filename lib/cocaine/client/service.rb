@@ -110,6 +110,7 @@ class Cocaine::Service < Cocaine::AbstractService
       end
     end
 
+    #todo: No ipv6 support yet
     connect_df = connect_to_endpoint *@endpoint
     connect_df.callback { df.succeed }
     connect_df.errback { |err| df.fail err }
