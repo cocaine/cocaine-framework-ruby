@@ -6,25 +6,26 @@ require 'cocaine/decoder'
 require 'cocaine/protocol'
 
 
-class Cocaine::Connection < EventMachine::Connection
-  class HookManager
-    def initialize
-      @hooks = {}
-    end
-
-    def on(type, &block)
-      @hooks[type] = block
-    end
-
-    def clear
-      @hooks.clear
-    end
-
-    def call(type, *args)
-      @hooks[type].call *args if @hooks.has_key? type
-    end
+class HookManager
+  def initialize
+    @hooks = {}
   end
 
+  def on(type, &block)
+    @hooks[type] = block
+  end
+
+  def clear
+    @hooks.clear
+  end
+
+  def call(type, *args)
+    @hooks[type].call *args if @hooks.has_key? type
+  end
+end
+
+
+class Cocaine::Connection < EventMachine::Connection
   attr_reader :state, :hooks
 
   def initialize(decoder=nil)
