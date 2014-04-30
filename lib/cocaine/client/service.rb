@@ -61,7 +61,13 @@ end
 
 
 class Cocaine::Locator < Cocaine::AbstractService
-  def initialize(host='localhost', port=10053)
+  @default_host = 'localhost'
+  @default_port = 10053
+  class << self
+    attr_accessor :default_host, :default_port
+  end
+
+  def initialize(host=self.class.default_host, port=self.class.default_port)
     @name = 'locator'
     @host = host
     @port = port
