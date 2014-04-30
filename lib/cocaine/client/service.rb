@@ -93,11 +93,12 @@ end
 class Cocaine::Service < Cocaine::AbstractService
   def initialize(name, host='localhost', port=10053)
     super name
+    @settings = {:host => host, :port => port}
   end
 
   def connect
     df = EventMachine::DefaultDeferrable.new
-    locator = Cocaine::Locator.new
+    locator = Cocaine::Locator.new @settings[:host], @settings[:port]
     d = locator.resolve @name
     d.callback { |result| on_connect result, df }
     d.errback { |err| df.fail err }
