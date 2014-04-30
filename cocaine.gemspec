@@ -20,8 +20,8 @@ Gem::Specification.new do |s|
   s.description = "Cocaine Framework is a framework for simplifying development both server-side
 and client-side applications. It's pretty nice, I promise."
 
-  s.add_development_dependency 'rspec'
+  s.add_development_dependency 'rspec', '~> 0'
 
-  s.add_runtime_dependency 'eventmachine'
-  s.add_runtime_dependency 'em-synchrony'
+  s.add_runtime_dependency 'eventmachine', '~> 1.0'
+  s.add_runtime_dependency 'em-synchrony', '~> 1.0'
 end
