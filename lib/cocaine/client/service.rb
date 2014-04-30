@@ -40,6 +40,7 @@ class Cocaine::AbstractService
   private
   def connect_to_endpoint(*endpoint)
     df = EM::DefaultDeferrable.new
+    $log.debug "connecting to the service '#{@name}' at #{endpoint} ..."
     EM.connect *endpoint, Cocaine::Connection do |conn|
       conn.hooks.on :connected do
         conn.hooks.clear
@@ -90,6 +91,10 @@ end
 
 
 class Cocaine::Service < Cocaine::AbstractService
+  def initialize(name, host='localhost', port=10053)
+    super name
+  end
+
   def connect
     df = EventMachine::DefaultDeferrable.new
     locator = Cocaine::Locator.new

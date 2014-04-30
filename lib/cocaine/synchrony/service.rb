@@ -32,8 +32,8 @@ end
 
 
 class Cocaine::Synchrony::Service
-  def initialize(name)
-    @service = Cocaine::Service.new name
+  def initialize(name, host='localhost', port=10053)
+    @service = Cocaine::Service.new name, host, port
     connect
     create_proxy_methods
   end
