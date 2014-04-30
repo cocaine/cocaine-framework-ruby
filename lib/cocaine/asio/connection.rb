@@ -6,6 +6,10 @@ require 'cocaine/decoder'
 require 'cocaine/protocol'
 
 
+$log = Logger.new(STDERR)
+$log.level = Logger::DEBUG
+
+
 class HookManager
   def initialize
     @hooks = {}
@@ -47,7 +51,7 @@ class Cocaine::Connection < EventMachine::Connection
   def receive_data(raw_data)
     @decoder.feed(raw_data) do |id, session, data|
       message = Cocaine::ProtocolFactory.create(id, data)
-      $log.debug "received: [#{session}] #{message}"
+      $log.debug "received message #{{:type => message.id, :session => session}}"
       @hooks.call :message, session, message
     end
   end
