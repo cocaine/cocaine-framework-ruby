@@ -8,9 +8,9 @@ This time it is cocaine-framework-ruby.
 
 Framework provides next features:
 
- * ability to create your own apps and upload it to the Cloud.
- * ability to use other Cloud services or apps.
- * explicit future-based asynchronous backend to maximize performance without using threads.
- * fiber-aware asynchronous backend to make your asynchronous code look like it is synchronous.
- * integration with our http-proxy for simple applications.
- * [In the nearest future], Ruby on Rails support.
+ * Ability to create your own apps and upload it to the Cloud.
+ * Ability to use other Cloud services or apps.
+ * Explicit future-based asynchronous backend to maximize performance without using threads.
+ * Fiber-aware asynchronous backend to make your asynchronous code look like it is synchronous.
+ * Integration with our http-proxy for simple applications.
+ * [In the nearest future] Ruby on Rails support.
