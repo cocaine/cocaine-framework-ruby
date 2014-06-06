@@ -61,3 +61,40 @@ module Cocaine::Http
     end
   end
 end
+
+
+module Cocaine::RackInterface
+  def execute(request, response)
+      df = request.read
+      df.callback do |msg|
+        method, url, version, headers, body = MessagePack::unpack msg
+        # should take a look to RACK SPEC.
+        env = {
+          "GATEWAY_INTERFACE" => "CGI/1.1",
+          "PATH_INFO" => url,
+          "QUERY_STRING" => URI.parse(url).query,
+          "REMOTE_ADDR" => "::1",
+          "REMOTE_HOST" => "localhost",
+          "REQUEST_METHOD" => method,
+          "REQUEST_URI" => url,
+          "SCRIPT_NAME" => "",
+          "SERVER_NAME" => "localhost",
+          "SERVER_PROTOCOL" => "HTTP/#{version}",
+          "rack.version" => [1, 2],
+          "rack.input" =>  StringIO.new(body),
+          "rack.errors" => $stderr,
+          "rack.multithread" => false,
+          "rack.multiprocess" => false,
+          "rack.run_once" => false,
+          "rack.url_scheme" => "http",
+          "HTTP_VERSION" => "HTTP/#{version}",
+          "REQUEST_PATH" => url,
+        }
+        code, headers,body = send("call", env)
+        response.write([code, headers.to_a])
+        body.each {|item| response.write(item) }
+        response.close
+      end
+  end
+end
+
