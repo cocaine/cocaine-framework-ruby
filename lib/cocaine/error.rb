@@ -1,2 +1,0 @@
-class IllegalStateError < StandardError
-end

@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 
-require 'cocaine'
+require 'cocaine-em'
 require 'cocaine/server/http'
 
-$log = Logger.new(STDERR)
+$log = Logger.new(STDOUT)
 $log.level = Logger::DEBUG
 
 class Echo
@@ -13,6 +13,9 @@ class Echo
       $log.debug "Message received: #{msg}"
       response.write msg
       response.close
+      $log.info('Sleep starting')
+      #EM::Synchrony.sleep(10)
+      $log.info('Sleep ended')
     end
   end
 end

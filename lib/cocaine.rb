@@ -1,6 +1,4 @@
-require 'version'
+$:.unshift(File.dirname(__FILE__) + '/../lib')
 
-require 'cocaine/namespace'
-require 'cocaine/client/service'
-require 'cocaine/synchrony/service'
-require 'cocaine/server/worker'
+require 'cocaine/version'
+require 'cocaine/cocaine'

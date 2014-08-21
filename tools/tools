@@ -1,0 +1,58 @@
+#!/usr/local/bin/ruby
+
+require 'thor'
+require_relative '../lib/cocaine'
+
+LOG = Logger.new STDERR
+
+module CocaineTools
+  module App
+    def self.read_manifest(path)
+      LOG.debug "Reading manifest in '#{path}'"
+      File.read(File.join(path, 'manifest.json'))
+    end
+
+    def self.create_archive(path, name)
+      LOG.debug "Creating archive from directory '#{path}'"
+      dir = Dir.mktmpdir 'cocaine-app-archive'
+
+      begin
+        archive = File.join(dir, "#{name}.tar.gz")
+        LOG.debug "Creating archive at '#{archive}'"
+        `tar -czf #{archive} #{path}`
+        File.read(archive)
+      ensure
+        FileUtils.remove_entry_secure dir
+      end
+    end
+
+    def self.upload(path, name=nil)
+      name ||= File.basename path
+      LOG.debug "Application will be named as '#{name}'"
+      manifest = read_manifest path
+      archive = MessagePack.pack create_archive(path, name)
+
+      storage = Cocaine::Service.new :storage
+
+      LOG.debug 'Uploading manifest using storage'
+      storage.write :manifests, name, manifest, [:app]
+
+      LOG.debug 'Uploading archive using storage'
+      storage.write :apps, name, archive, [:app]
+    end
+  end
+end
+
+class App < Thor
+  desc 'upload PATH', 'upload application from PATH'
+  def upload(path=Dir.pwd)
+    CocaineTools::App::upload path
+  end
+end
+
+class CocaineToolsCLI < Thor
+  desc 'app SUBCOMMAND', 'Application specific tools'
+  subcommand :app, App
+end
+
+CocaineToolsCLI.start(ARGV)

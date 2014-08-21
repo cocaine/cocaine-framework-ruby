@@ -22,6 +22,7 @@ and client-side applications. It's pretty nice, I promise."
 
   s.add_development_dependency 'rspec', '~> 0'
 
+  s.add_runtime_dependency 'msgpack', '~> 0.5'
   s.add_runtime_dependency 'eventmachine', '~> 1.0'
   s.add_runtime_dependency 'em-synchrony', '~> 1.0'
 end
