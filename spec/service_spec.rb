@@ -9,6 +9,10 @@ describe 'Locator' do
     Cocaine::Locator.new
   end
 
+  it 'should connect to the specified endpoint' do
+    Cocaine::Locator.new 'localhost', 10053
+  end
+
   it 'should resolve Node service' do
     locator = Cocaine::Locator.new
     tx, rx = locator.resolve :node
@@ -20,6 +24,10 @@ end
 describe 'Service' do
   it 'should connect to the Node service' do
     Cocaine::Service.new :node
+  end
+
+  it 'should connect to the Node service using locator endpoint' do
+    Cocaine::Service.new :node, 'localhost', 10053
   end
 
   it 'should fetch app list from Node service' do

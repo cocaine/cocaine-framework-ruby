@@ -16,7 +16,8 @@ module Cocaine
 
   module Default
     module Locator
-      ENDPOINT = ['localhost', 10053]
+      HOST = 'localhost'
+      PORT = 10053
       API = {
           0 => [
               'resolve',
@@ -140,16 +141,12 @@ module Cocaine
         end
       end
 
-      # Todo: Dirty!
-      LOG.debug "Resolving host '#{host}'"
-      addrinfo = Socket::getaddrinfo(host, nil, nil, :STREAM)
-      addrinfo.sort_by! { |addr| addr[4] }
-
-      LOG.debug "Connecting to the '#{name}' service at #{host}:#{port}"
+      addrinfo = Addrinfo.getaddrinfo(host, nil, nil, :STREAM)
+      LOG.debug "Connecting to the '#{name}' service at '#{host}:#{port}'"
       addrinfo.each do |addr|
         begin
-          LOG.debug "Trying #{addr}"
-          @socket = TCPSocket.new(addr[2], port)
+          LOG.debug "Trying: #{addr.inspect}"
+          @socket = TCPSocket.new(addr.ip_address, port)
           break
         rescue IOError => err
           LOG.warn "Failed: #{err}"
@@ -160,6 +157,7 @@ module Cocaine
     end
 
     def run
+      LOG.debug "Service '#{@name}' is running"
       unpacker = MessagePack::Unpacker.new
       loop do
         data = @socket.readpartial(4096)
@@ -200,8 +198,8 @@ module Cocaine
   end
 
   class Locator < DefinedService
-    def initialize
-      super :locator, Default::Locator::ENDPOINT, Default::Locator::API
+    def initialize(host=nil, port=nil)
+      super :locator, [host || Default::Locator::HOST, port || Default::Locator::PORT], Default::Locator::API
     end
   end
 
@@ -209,8 +207,8 @@ module Cocaine
   end
 
   class Service < DefinedService
-    def initialize(name)
-      locator = Locator.new
+    def initialize(name, host=nil, port=nil)
+      locator = Locator.new host, port
       tx, rx = locator.resolve name
       id, payload = rx.get
       if id == 1
