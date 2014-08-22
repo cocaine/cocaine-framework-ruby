@@ -1,5 +1,6 @@
 require 'logger'
 require 'msgpack'
+require 'optparse'
 
 require 'celluloid'
 require 'celluloid/io'
@@ -30,7 +31,48 @@ module Cocaine
     end
   end
 
-  class RxChannel < Meta
+  module RPC
+    HANDSHAKE = 0
+    HEARTBEAT = 1
+    TERMINATE = 2
+    INVOKE = 3
+    CHUNK = 4
+    ERROR = 5
+    CHOKE = 6
+
+    class RxStream
+      def initialize
+        @queue = Celluloid::Mailbox.new
+      end
+
+      def <<(payload)
+        @queue << payload
+      end
+
+      def read(timeout=5.0)
+        @queue.receive timeout
+      end
+    end
+
+    class TxStream
+      def initialize(session, socket)
+        @session = session
+        @socket = socket
+      end
+
+      def write(*payload)
+        @socket.write MessagePack.pack [@session, RPC::CHUNK, payload]
+      end
+
+      def error(errno, reason)
+      end
+
+      def close
+      end
+    end
+  end
+
+  class RxChannel
     def initialize(tree)
       @tree = Hash.new
       @queue = Celluloid::Mailbox.new
@@ -58,16 +100,10 @@ module Cocaine
     end
   end
 
-  class TxChannel < Meta
+  class TxChannel
     def initialize(tree, session, service)
       @session = session
       @service = service
-      tree.each do |id, (method, txtree, rxtree)|
-        LOG.debug "Defined '#{method}' method for transmit channel"
-        self.metaclass.send(:define_method, method) do |*args|
-          return push id, txtree, rxtree, args
-        end
-      end
     end
 
     # Called by used (implicitly via dynamically named methods), when he/she wants to send message to the session.
@@ -186,6 +222,124 @@ module Cocaine
     end
   end
 
+  class WorkerActor
+    include Celluloid
+
+    def initialize(block)
+      @block = block
+    end
+
+    def execute(tx, rx)
+      @block.call tx, rx
+    end
+  end
+
   class Worker
+    include Celluloid
+    include Celluloid::IO
+
+    execute_block_on_receiver :on
+    finalizer :finalize
+
+    def initialize(app, uuid, endpoint)
+      @app = app
+      @uuid = uuid
+      @endpoint = endpoint
+      @actors = Hash.new
+      @sessions = Hash.new
+    end
+
+    def on(event, &block)
+      @actors[event.to_s] = WorkerActor.new block
+    end
+
+    def run
+      LOG.debug "Starting worker '#{@app}' with uuid '#{@uuid}' ad '#{@endpoint}'"
+      @socket = UNIXSocket.open(@endpoint)
+      async.handshake
+      async.health
+      async.serve
+    end
+
+    private
+    def handshake
+      @socket.write MessagePack::pack([1, RPC::HANDSHAKE, [@uuid]])
+    end
+
+    def health
+      heartbeat = MessagePack::pack([1, RPC::HEARTBEAT, []])
+      loop do
+        @socket.write heartbeat
+        sleep 10.0
+      end
+    end
+
+    def serve
+      unpacker = MessagePack::Unpacker.new
+      loop do
+        data = @socket.readpartial(4096)
+        unpacker.feed_each(data) do |decoded|
+          async.received *decoded
+        end
+      end
+    end
+
+    def received(session, id, payload)
+      case id
+        when RPC::HANDSHAKE
+        when RPC::HEARTBEAT
+        when RPC::TERMINATE
+          terminate *payload
+        when RPC::INVOKE
+          invoke session, *payload
+        when RPC::CHUNK, RPC::ERROR, RPC::CHOKE
+          push session, *payload
+        else
+          LOG.warn "Received unknown message: [#{session}, #{id}, #{payload}]"
+      end
+    end
+
+    def invoke(session, event)
+      actor = @actors[event]
+      if actor
+        tx = RPC::TxStream.new(session, @socket)
+        rx = RPC::RxStream.new
+        @sessions[session] = [tx, rx]
+        actor.execute tx, rx
+      else
+        LOG.warn "Received unregistered invocation event: '#{event}'"
+      end
+    end
+
+    def push(session, *payload)
+      _, rx = @sessions[session]
+      rx << payload if rx
+    end
+
+    def terminate(errno, reason)
+      LOG.warn "Terminating [#{errno}]: #{reason}"
+      exit(errno)
+    end
+
+    def finalize
+      if @socket
+        @socket.close
+      end
+    end
+  end
+
+  class WorkerFactory
+    def self.create
+      options = {}
+      OptionParser.new do |opts|
+        opts.banner = 'Usage: <your_worker.rb> --app NAME --locator ADDRESS --uuid UUID --endpoint ENDPOINT'
+
+        opts.on('--app NAME', 'Worker name') { |a| options[:app] = a }
+        opts.on('--locator ADDRESS', 'Locator address') { |a| options[:locator] = a }
+        opts.on('--uuid UUID', 'Worker uuid') { |a| options[:uuid] = a }
+        opts.on('--endpoint ENDPOINT', 'Worker endpoint') { |a| options[:endpoint] = a }
+      end.parse!
+      return Worker.new(options[:app], options[:uuid], options[:endpoint])
+    end
   end
 end

@@ -9,4 +9,3 @@ end
 
 require 'cocaine/version'
 require 'cocaine/cocaine'
-require 'cocaine/worker'
