@@ -19,15 +19,11 @@ module Cocaine
       end
 
       def accept(payload)
-        LOG.debug "Put '#{payload}'"
         @queue << payload
       end
 
-      def read(timeout=10.0)
-        LOG.debug 'Get...'
-        payload = @queue.receive timeout
-        LOG.debug "GOT '#{payload}'"
-        payload
+      def read(timeout=5.0)
+        @queue.receive timeout
       end
     end
 
@@ -37,10 +33,27 @@ module Cocaine
         @socket = socket
       end
 
-      def write(id, *payload)
-        LOG.debug "Write to socket: [#{@session}, #{id}, #{payload}]"
-        @socket.write MessagePack.pack [@session, id, payload]
+      def write(*payload)
+        @socket.write MessagePack.pack [@session, RPC::CHUNK, payload]
       end
+
+      def error(errno, reason)
+      end
+
+      def close
+      end
+    end
+  end
+
+  class WorkerActor
+    include Celluloid
+
+    def initialize(block)
+      @block = block
+    end
+
+    def execute(tx, rx)
+      @block.call tx, rx
     end
   end
 
@@ -48,6 +61,7 @@ module Cocaine
     include Celluloid
     include Celluloid::IO
 
+    execute_block_on_receiver :on
     finalizer :finalize
 
     def initialize(app, uuid, endpoint)
@@ -58,9 +72,8 @@ module Cocaine
       @sessions = Hash.new
     end
 
-    # execute_block_on_receiver :on
-    def on(event, block)
-      @events[event.to_s] = block
+    def on(event, &block)
+      @events[event.to_s] = WorkerActor.new block
     end
 
     def run
@@ -77,8 +90,9 @@ module Cocaine
     end
 
     def health
+      heartbeat = MessagePack::pack([1, RPC::HEARTBEAT, []])
       loop do
-        @socket.write MessagePack::pack([1, RPC::HEARTBEAT, []])
+        @socket.write heartbeat
         sleep 10.0
       end
     end
@@ -88,7 +102,7 @@ module Cocaine
       loop do
         data = @socket.readpartial(4096)
         unpacker.feed_each(data) do |decoded|
-          received *decoded
+          async.received *decoded
         end
       end
     end
@@ -100,7 +114,7 @@ module Cocaine
         when RPC::HEARTBEAT
           # Todo.
         when RPC::TERMINATE
-          # Todo.
+          terminate *payload
         when RPC::INVOKE
           invoke session, *payload
         when RPC::CHUNK, RPC::ERROR, RPC::CHOKE
@@ -118,8 +132,7 @@ module Cocaine
         tx = RPC::TxStream.new(session, @socket)
         rx = RPC::RxStream.new
         @sessions[session] = [tx, rx]
-        Celluloid::Future.new { callback.exec tx, rx }
-        # f.value
+        callback.execute tx, rx
       else
         LOG.warn "Received unregistered invocation event: '#{event}'"
       end
@@ -127,13 +140,14 @@ module Cocaine
 
     def push(session, id, *payload)
       LOG.debug "Pushing #{session}, #{id}: #{payload}"
-      tx, rx = @sessions[session]
+      _, rx = @sessions[session]
       if rx
         rx.accept payload
       end
     end
 
     def terminate(errno, reason)
+      LOG.warn "Terminating [#{errno}]: #{reason}"
       exit(errno)
     end
 
