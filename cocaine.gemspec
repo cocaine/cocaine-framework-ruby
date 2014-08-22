@@ -1,7 +1,5 @@
 # -*- encoding: utf-8 -*-
-$:.unshift File.expand_path('lib', __FILE__)
-
-require_relative 'lib/cocaine/version'
+require File.expand_path('../lib/cocaine/version', __FILE__)
 
 Gem::Specification.new do |s|
   s.name = 'cocaine'
