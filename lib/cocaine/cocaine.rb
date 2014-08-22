@@ -5,9 +5,6 @@ require 'celluloid'
 require 'celluloid/io'
 
 module Cocaine
-  LOG = Logger.new STDERR
-  LOG.level = Logger::DEBUG
-
   class Meta
     def metaclass
       class << self
@@ -50,7 +47,6 @@ module Cocaine
       if txtree
         if txtree.empty?
           LOG.debug "Closing RX channel #{self}"
-          @client
         end
       end
 
@@ -63,9 +59,11 @@ module Cocaine
   end
 
   class TxChannel < Meta
-    def initialize(tree)
+    def initialize(tree, session, service)
+      @session = session
+      @service = service
       tree.each do |id, (method, txtree, rxtree)|
-        LOG.debug "defining '#{method}' method for transmit channel"
+        LOG.debug "Defined '#{method}' method for transmit channel"
         self.metaclass.send(:define_method, method) do |*args|
           return push id, txtree, rxtree, args
         end
@@ -73,7 +71,8 @@ module Cocaine
     end
 
     # Called by used (implicitly via dynamically named methods), when he/she wants to send message to the session.
-    def push(id, txtree, rxtree, *args)
+    def push(id, *args)
+      @service.push @session, id, *args
       # TODO: Complete.
       # Traverse the tree.
       # If new state - delete old methods for service.
@@ -96,18 +95,29 @@ module Cocaine
       @sessions = Hash.new
 
       host, port = endpoint
-      LOG.debug "Initializing '#{name}' service at #{host}:#{port}"
+      LOG.debug "Initializing '#{name}' service at '#{host}:#{port}'"
       dispatch.each do |id, (method, txtree, rxtree)|
+        LOG.debug "Defined '#{method}' method for service #{self}"
         self.metaclass.send(:define_method, method) do |*args|
           LOG.debug "Invoking #{@name}.#{method}(#{args})"
           return invoke(id, *args)
         end
       end
 
+      # Todo: Dirty!
       LOG.debug "Resolving host '#{host}'"
-      DNS.getaddresses(host).each do |address|
-        LOG.debug "Connecting to the '#{name}' service at #{address}:#{port}"
-        @socket = TCPSocket.new(address, port)
+      addrinfo = Socket::getaddrinfo(host, nil, nil, :STREAM)
+      addrinfo.sort_by! { |addr| addr[4] }
+
+      LOG.debug "Connecting to the '#{name}' service at #{host}:#{port}"
+      addrinfo.each do |addr|
+        begin
+          LOG.debug "Trying #{addr}"
+          @socket = TCPSocket.new(addr[2], port)
+          break
+        rescue IOError => err
+          LOG.warn "Failed: #{err}"
+        end
       end
 
       async.run
@@ -136,14 +146,20 @@ module Cocaine
     def invoke(id, *args)
       LOG.debug "Invoking #{@name}[#{id}] with #{args}"
       method, txtree, rxtree = @dispatch[id]
-      tx, rx = @sessions[@counter] = [TxChannel.new(txtree), (RxChannel.new rxtree)]
+      tx, rx = @sessions[@counter] = [TxChannel.new(txtree, @counter, self), (RxChannel.new rxtree)]
 
       LOG.debug "-> [#{@counter}, #{id}, #{args}]"
-      message = MessagePack.pack([@counter, id, [*args]])
+      message = MessagePack.pack([@counter, id, args])
       @counter += 1
 
       @socket.write message
       return tx, rx
+    end
+
+    def push(session, id, *args)
+      LOG.debug "Pushing #{@name}[#{id}] with #{args}"
+      LOG.debug "-> [#{session}, #{id}, #{args}]"
+      @socket.write MessagePack.pack([session, id, args])
     end
   end
 
@@ -153,11 +169,19 @@ module Cocaine
     end
   end
 
+  class ServiceError < IOError
+  end
+
   class Service < DefinedService
     def initialize(name)
       locator = Locator.new
       tx, rx = locator.resolve name
-      id, (endpoint, version, dispatch) = rx.get
+      id, payload = rx.get
+      if id == 1
+        raise ServiceError.new payload
+      end
+
+      endpoint, version, dispatch = payload
       super name, endpoint, dispatch
     end
   end

@@ -1,15 +1,17 @@
 #!/usr/local/bin/ruby
 
 require 'thor'
+require 'json'
 require_relative '../lib/cocaine'
 
 LOG = Logger.new STDERR
 
 module CocaineTools
+  # noinspection ALL
   module App
     def self.read_manifest(path)
       LOG.debug "Reading manifest in '#{path}'"
-      File.read(File.join(path, 'manifest.json'))
+      JSON.parse(File.read(File.join(path, 'manifest.json')))
     end
 
     def self.create_archive(path, name)
@@ -19,7 +21,7 @@ module CocaineTools
       begin
         archive = File.join(dir, "#{name}.tar.gz")
         LOG.debug "Creating archive at '#{archive}'"
-        `tar -czf #{archive} #{path}`
+        `tar -czf #{archive} -C #{path} .`
         File.read(archive)
       ensure
         FileUtils.remove_entry_secure dir
@@ -29,7 +31,7 @@ module CocaineTools
     def self.upload(path, name=nil)
       name ||= File.basename path
       LOG.debug "Application will be named as '#{name}'"
-      manifest = read_manifest path
+      manifest = MessagePack.pack read_manifest(path)
       archive = MessagePack.pack create_archive(path, name)
 
       storage = Cocaine::Service.new :storage
@@ -40,19 +42,91 @@ module CocaineTools
       LOG.debug 'Uploading archive using storage'
       storage.write :apps, name, archive, [:app]
     end
+
+    def self.restart(app, profile)
+      node = Cocaine::Service.new :node
+      _, rx = node.pause_app [app]
+      LOG.debug "Stopping application '#{app}': #{rx.get}"
+      _, rx = node.start_app({ app => profile })
+      LOG.debug "Starting application '#{app}' with profile '#{profile}': #{rx.get}"
+    end
   end
 end
 
 class App < Thor
+  desc 'list', 'apps list'
+  def list
+    storage = Cocaine::Service.new :storage
+    _, rx = storage.find :manifests, [:app]
+    LOG.info "Apps: #{rx.get}"
+  end
+
   desc 'upload PATH', 'upload application from PATH'
   def upload(path=Dir.pwd)
     CocaineTools::App::upload path
+  end
+
+  desc 'restart APP PROFILE', 'restart APP with PROFILE'
+  def restart(app, profile)
+    CocaineTools::App::restart app, profile
+  end
+end
+
+class Profile < Thor
+  desc 'list', 'profiles list'
+  def list
+    storage = Cocaine::Service.new :storage
+    _, rx = storage.find :profiles, [:profile]
+    LOG.info "Profiles: #{rx.get}"
+  end
+
+  desc 'edit', ''
+  def edit(name)
+    storage = Cocaine::Service.new :storage
+    # _, rx = storage.read :profiles, name
+    # id, payload = rx.get
+    # content = MessagePack.unpack payload[0]
+    # LOG.debug content
+    #
+    # file = Tempfile.new('profile')
+    begin
+      # file.write content
+      # file.close
+      # system(ENV['EDITOR'] || 'vim' + ' ' + file.path)
+      # file.open
+      content = {
+          :isolate => {
+              :args => {
+                  :spool => '/Users/esafronov/cocaine/var/spool/cocaine'
+              },
+              :type => 'process'
+          },
+          'log-output' => true
+      }
+      content = MessagePack.pack content #file.read
+      storage.write :profiles, name, content
+    ensure
+      # file.unlink
+    end
+  end
+end
+
+class CrashLog < Thor
+  desc 'view', ''
+  def view(name, timestamp)
+    storage = Cocaine::Service.new :storage
+    _, rx = storage.find :crashlogs, [name]
+
+    LOG.info "Profiles: #{rx.get}"
   end
 end
 
 class CocaineToolsCLI < Thor
   desc 'app SUBCOMMAND', 'Application specific tools'
   subcommand :app, App
+
+  desc 'profile SUBCOMMAND', 'Profile specific tools'
+  subcommand :profile, Profile
 end
 
 CocaineToolsCLI.start(ARGV)

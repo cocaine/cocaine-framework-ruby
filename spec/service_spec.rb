@@ -2,7 +2,7 @@ require 'rspec'
 
 require 'celluloid/io'
 
-require_relative '../cocaine'
+require_relative '../lib/cocaine'
 
 describe 'Locator' do
   it 'should connect' do
@@ -27,5 +27,15 @@ describe 'Service' do
     tx, rx = node.list
     id, list = rx.get
     Cocaine::LOG.debug "List: #{id}, #{list}"
+  end
+end
+
+describe 'Echo' do
+  it 'should responds' do
+    echo = Cocaine::Service.new :echo
+    tx, rx = echo.enqueue :ping
+    tx.push 0, 'le message'
+    message = rx.get
+    expect(message == 'le message')
   end
 end
