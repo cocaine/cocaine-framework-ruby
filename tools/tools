@@ -7,20 +7,22 @@ require 'rainbow/ext/string'
 
 require_relative '../lib/cocaine'
 
+module Stage
+  def self.stage(prompt)
+    puts "[  --  ] #{prompt} ..."
+    result, magic = yield
+    puts "\e[A\r[#{'  OK  '.color :green}] #{prompt}#{result ? '    ' : ": #{magic.to_s.color :green}"}"
+    return result
+  rescue Exception => err
+    puts "\e[A\r[#{' FAIL '.color :red}] #{prompt}: #{err.to_s.color :red}"
+    raise err
+  end
+end
+
 module CocaineTools
   module App
-    def self.stage(prompt)
-      puts "[  --  ] #{prompt} ..."
-      result, magic = yield
-      puts "\e[A\r[#{'  OK  '.color :green}] #{prompt}#{result ? '    ' : ": #{magic.to_s.color :green}"}"
-      return result
-    rescue Exception => err
-      puts "\e[A\r[#{' FAIL '.color :red}] #{prompt}: #{err.to_s.color :red}"
-      raise err
-    end
-
     def self.upload(path, name=nil)
-      manifest = stage "Locating and reading manifest from '#{path}'" do
+      manifest = Stage::stage "Locating and reading manifest from '#{path}'" do
         MessagePack.pack JSON.parse File.read File.join path, 'manifest.json'
       end
 
@@ -28,7 +30,7 @@ module CocaineTools
 
       tmpdir = Dir.mktmpdir 'cocaine-app-archive'
       tmpfile = File.join(tmpdir, "#{name}.tar.gz")
-      archive = stage "Creating archive from '#{path}'" do
+      archive = Stage::stage "Creating archive from '#{path}'" do
         begin
           `tar -czf #{tmpfile} -C #{path} .`
           MessagePack.pack File.read tmpfile
@@ -37,31 +39,31 @@ module CocaineTools
         end
       end
 
-      storage = stage 'Connecting to the Cocaine' do
+      storage = Stage::stage 'Connecting to the Cocaine' do
         Cocaine::Service.new :storage
       end
 
-      stage 'Uploading manifest' do
+      Stage::stage 'Uploading manifest' do
         storage.write :manifests, name, manifest, [:app]
       end
 
-      stage 'Uploading archive' do
+      Stage::stage 'Uploading archive' do
         storage.write :apps, name, archive, [:app]
       end
     end
 
     # noinspection RubyResolve
     def self.restart(app, profile)
-      node = stage 'Connecting to the Cocaine' do
+      node = Stage::stage 'Connecting to the Cocaine' do
         Cocaine::Service.new :node
       end
 
-      stage "Stopping application '#{app}'" do
+      Stage::stage "Stopping application '#{app}'" do
         _, rx = node.pause_app [app]
         [nil, rx.get]
       end
 
-      stage "Starting application '#{app}' with profile '#{profile}'" do
+      Stage::stage "Starting application '#{app}' with profile '#{profile}'" do
         _, rx = node.start_app({ app => profile })
         [nil, rx.get]
       end
@@ -72,15 +74,21 @@ end
 class App < Thor
   desc 'list', 'apps list'
   def list
-    storage = Cocaine::Service.new :storage
-    _, rx = storage.find :manifests, [:app]
-    LOG.info "Apps: #{rx.get}"
+    storage = Stage::stage 'Connecting to the Cocaine' do
+      Cocaine::Service.new :storage
+    end
+
+    Stage::stage 'Fetching app list' do
+      _, rx = storage.find :manifests, [:app]
+      [nil, rx.get]
+    end
   end
 
   desc 'upload PATH', 'upload application from PATH'
   def upload(path=Dir.pwd)
     CocaineTools::App::upload path
-  rescue
+  rescue Exception => err
+    puts err
     exit(1)
   end
 
@@ -90,61 +98,9 @@ class App < Thor
   end
 end
 
-class Profile < Thor
-  desc 'list', 'profiles list'
-  def list
-    storage = Cocaine::Service.new :storage
-    _, rx = storage.find :profiles, [:profile]
-    LOG.info "Profiles: #{rx.get}"
-  end
-
-  desc 'edit', ''
-  def edit(name)
-    storage = Cocaine::Service.new :storage
-    # _, rx = storage.read :profiles, name
-    # id, payload = rx.get
-    # content = MessagePack.unpack payload[0]
-    # LOG.debug content
-    #
-    # file = Tempfile.new('profile')
-    begin
-      # file.write content
-      # file.close
-      # system(ENV['EDITOR'] || 'vim' + ' ' + file.path)
-      # file.open
-      content = {
-          :isolate => {
-              :args => {
-                  :spool => '/Users/esafronov/cocaine/var/spool/cocaine'
-              },
-              :type => 'process'
-          },
-          'log-output' => true
-      }
-      content = MessagePack.pack content #file.read
-      storage.write :profiles, name, content
-    ensure
-      # file.unlink
-    end
-  end
-end
-
-class CrashLog < Thor
-  desc 'view', ''
-  def view(name, timestamp)
-    storage = Cocaine::Service.new :storage
-    _, rx = storage.find :crashlogs, [name]
-
-    LOG.info "Profiles: #{rx.get}"
-  end
-end
-
 class CocaineToolsCLI < Thor
   desc 'app SUBCOMMAND', 'Application specific tools'
   subcommand :app, App
-
-  desc 'profile SUBCOMMAND', 'Profile specific tools'
-  subcommand :profile, Profile
 end
 
 # Suppress internal loggers.
