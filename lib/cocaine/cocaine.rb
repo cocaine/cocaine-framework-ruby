@@ -121,8 +121,6 @@ module Cocaine
   class DefinedService < Meta
     include Celluloid::IO
 
-    DNS = Resolv::DNS.new
-
     def initialize(name, endpoint, dispatch)
       @name = name
       @endpoint = endpoint
