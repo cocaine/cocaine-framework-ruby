@@ -2,53 +2,69 @@
 
 require 'thor'
 require 'json'
+
+require 'rainbow/ext/string'
+
 require_relative '../lib/cocaine'
 
-LOG = Logger.new STDERR
-
 module CocaineTools
-  # noinspection ALL
   module App
-    def self.read_manifest(path)
-      LOG.debug "Reading manifest in '#{path}'"
-      JSON.parse(File.read(File.join(path, 'manifest.json')))
-    end
-
-    def self.create_archive(path, name)
-      LOG.debug "Creating archive from directory '#{path}'"
-      dir = Dir.mktmpdir 'cocaine-app-archive'
-
-      begin
-        archive = File.join(dir, "#{name}.tar.gz")
-        LOG.debug "Creating archive at '#{archive}'"
-        `tar -czf #{archive} -C #{path} .`
-        File.read(archive)
-      ensure
-        FileUtils.remove_entry_secure dir
-      end
+    def self.stage(prompt)
+      puts "[  --  ] #{prompt} ..."
+      result, magic = yield
+      puts "\e[A\r[#{'  OK  '.color :green}] #{prompt}#{result ? '    ' : ": #{magic.to_s.color :green}"}"
+      return result
+    rescue Exception => err
+      puts "\e[A\r[#{' FAIL '.color :red}] #{prompt}: #{err.to_s.color :red}"
+      raise err
     end
 
     def self.upload(path, name=nil)
+      manifest = stage "Locating and reading manifest from '#{path}'" do
+        MessagePack.pack JSON.parse File.read File.join path, 'manifest.json'
+      end
+
       name ||= File.basename path
-      LOG.debug "Application will be named as '#{name}'"
-      manifest = MessagePack.pack read_manifest(path)
-      archive = MessagePack.pack create_archive(path, name)
 
-      storage = Cocaine::Service.new :storage
+      tmpdir = Dir.mktmpdir 'cocaine-app-archive'
+      tmpfile = File.join(tmpdir, "#{name}.tar.gz")
+      archive = stage "Creating archive from '#{path}'" do
+        begin
+          `tar -czf #{tmpfile} -C #{path} .`
+          MessagePack.pack File.read tmpfile
+        ensure
+          FileUtils.remove_entry_secure tmpdir
+        end
+      end
 
-      LOG.debug 'Uploading manifest using storage'
-      storage.write :manifests, name, manifest, [:app]
+      storage = stage 'Connecting to the Cocaine' do
+        Cocaine::Service.new :storage
+      end
 
-      LOG.debug 'Uploading archive using storage'
-      storage.write :apps, name, archive, [:app]
+      stage 'Uploading manifest' do
+        storage.write :manifests, name, manifest, [:app]
+      end
+
+      stage 'Uploading archive' do
+        storage.write :apps, name, archive, [:app]
+      end
     end
 
+    # noinspection RubyResolve
     def self.restart(app, profile)
-      node = Cocaine::Service.new :node
-      _, rx = node.pause_app [app]
-      LOG.debug "Stopping application '#{app}': #{rx.get}"
-      _, rx = node.start_app({ app => profile })
-      LOG.debug "Starting application '#{app}' with profile '#{profile}': #{rx.get}"
+      node = stage 'Connecting to the Cocaine' do
+        Cocaine::Service.new :node
+      end
+
+      stage "Stopping application '#{app}'" do
+        _, rx = node.pause_app [app]
+        [nil, rx.get]
+      end
+
+      stage "Starting application '#{app}' with profile '#{profile}'" do
+        _, rx = node.start_app({ app => profile })
+        [nil, rx.get]
+      end
     end
   end
 end
@@ -64,6 +80,8 @@ class App < Thor
   desc 'upload PATH', 'upload application from PATH'
   def upload(path=Dir.pwd)
     CocaineTools::App::upload path
+  rescue
+    exit(1)
   end
 
   desc 'restart APP PROFILE', 'restart APP with PROFILE'
@@ -128,5 +146,9 @@ class CocaineToolsCLI < Thor
   desc 'profile SUBCOMMAND', 'Profile specific tools'
   subcommand :profile, Profile
 end
+
+# Suppress internal loggers.
+Celluloid.logger = nil
+Cocaine::LOG.level = Logger::ERROR
 
 CocaineToolsCLI.start(ARGV)
