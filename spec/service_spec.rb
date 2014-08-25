@@ -16,7 +16,7 @@ describe 'Locator' do
   it 'should resolve Node service' do
     locator = Cocaine::Locator.new
     tx, rx = locator.resolve :node
-    id, info = rx.get
+    id, info = rx.receive
     Cocaine::LOG.debug "Info: #{id}, #{info}"
   end
 end
@@ -33,7 +33,7 @@ describe 'Service' do
   it 'should fetch app list from Node service' do
     node = Cocaine::Service.new :node
     tx, rx = node.list
-    id, list = rx.get
+    id, list = rx.receive
     Cocaine::LOG.debug "List: #{id}, #{list}"
   end
 end
@@ -43,7 +43,7 @@ describe 'Echo' do
     echo = Cocaine::Service.new :echo
     tx, rx = echo.enqueue :ping
     tx.push 0, 'le message'
-    message = rx.get
+    message = rx.receive
     expect(message == 'le message')
   end
 end

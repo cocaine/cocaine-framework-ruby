@@ -42,82 +42,75 @@ module Cocaine
     ERROR = 5
     CHOKE = 6
 
-    # Receive stream for worker.
-    class RxStream
-      def initialize
-        @queue = Celluloid::Mailbox.new
-      end
+    RXTREE = {
+        CHUNK => ['write', nil, {}],
+        ERROR => ['error', {}, {}],
+        CHOKE => ['close', {}, {}]
+    }
+    TXTREE = RXTREE
+  end
 
-      def <<(payload)
-        @queue << payload
-      end
+  class Box
+    def initialize(queue)
+      @queue = queue
+    end
+  end
 
-      def receive(timeout=30.0)
-        @queue.receive timeout
+  class Inbox < Box
+    def receive(timeout=30.0)
+      @queue.receive timeout
+    end
+  end
+
+  class Outbox < Box
+    def initialize(queue, tree)
+      super queue
+
+      @tree = Hash.new
+      tree.each do |id, (_, txtree, _)|
+        @tree[id] = txtree
       end
     end
 
-    # Transmission stream for worker.
-    class TxStream
-      def initialize(session, socket)
-        @session = session
-        @socket = socket
+    def push(id, payload)
+      txtree = @tree[id]
+      if txtree && txtree.empty?
+        # Todo: Close.
+        LOG.debug "Closing RX channel #{self}"
       end
 
-      def write(*payload)
-        @socket.write MessagePack.pack [@session, RPC::CHUNK, payload]
-      end
-
-      def error(errno, reason)
-        @socket.write MessagePack.pack [@session, RPC::ERROR, [errno, reason]]
-      end
-
-      def close
-        @socket.write MessagePack.pack [@session, RPC::CHOKE, []]
-      end
+      @queue << [id, payload]
     end
   end
 
   # Receive channel for clients.
   class RxChannel
+    attr_reader :inbox, :outbox
+
     def initialize(tree)
-      @tree = Hash.new
-      @queue = Celluloid::Mailbox.new
-
-      tree.each do |id, (method, txtree, rxtree)|
-        LOG.debug "Defined '#{method}' method for receive channel"
-        @tree[id] = txtree
-      end
-    end
-
-    # Called by the library, when the client received a message from the runtime.
-    def accept(id, payload)
-      txtree = @tree[id]
-      if txtree
-        if txtree.empty?
-          LOG.debug "Closing RX channel #{self}"
-        end
-      end
-
-      @queue << [id, payload]
-    end
-
-    # Called by user to receive the next message.
-    def get(timeout=1.0)
-      @queue.receive timeout
+      queue = Celluloid::Mailbox.new
+      @inbox = Inbox.new queue
+      @outbox = Outbox.new queue, tree
     end
   end
 
-  class TxChannel
+  class TxChannel < Meta
     def initialize(tree, session, socket)
       @session = session
       @socket = socket
+
+      tree.each do |id, (method, _, _)|
+        LOG.debug "Defined '#{method}' method for tx channel"
+        self.metaclass.send(:define_method, method) do |*args|
+          push id, *args
+        end
+      end
     end
 
     # Called by user (implicitly via dynamically named methods), when he/she wants to send message to the session.
     def push(id, *args)
       LOG.debug "-> [#{@session}, #{id}, #{args}]"
-      @socket.write MessagePack.pack([@session, id, args])
+      @socket.write MessagePack.pack [@session, id, args]
       # TODO: Complete.
       # Traverse the tree.
       # If new state - delete old methods for service.
@@ -139,7 +132,7 @@ module Cocaine
 
       host, port = endpoint
       LOG.debug "Initializing '#{name}' service at '#{host}:#{port}'"
-      dispatch.each do |id, (method, txtree, rxtree)|
+      dispatch.each do |id, (method, _, _)|
         LOG.debug "Defined '#{method}' method for service #{self}"
         self.metaclass.send(:define_method, method) do |*args|
           LOG.debug "Invoking #{@name}.#{method}(#{args})"
@@ -168,16 +161,16 @@ module Cocaine
       loop do
         data = @socket.readpartial(4096)
         unpacker.feed_each(data) do |decoded|
-          received *decoded
+          async.received *decoded
         end
       end
     end
 
     def received(session, id, payload)
       LOG.debug "<- [#{session}, #{id}, #{payload}]"
-      tx, rx = @sessions[session]
+      _, rx = @sessions[session]
       if rx
-        rx.accept id, payload
+        rx.push id, payload
       else
         LOG.warn "Received message to closed session: [#{session}, #{id}, #{payload}]"
       end
@@ -185,15 +178,17 @@ module Cocaine
 
     def invoke(id, *args)
       LOG.debug "Invoking #{@name}[#{id}] with #{args}"
-      method, txtree, rxtree = @dispatch[id]
-      tx, rx = @sessions[@counter] = [TxChannel.new(txtree, @counter, @socket), (RxChannel.new rxtree)]
+      _, txtree, rxtree = @dispatch[id]
+      tx = TxChannel.new txtree, @counter, @socket
+      rx = RxChannel.new rxtree
+      @sessions[@counter] = [tx, rx.outbox]
 
       LOG.debug "-> [#{@counter}, #{id}, #{args}]"
       message = MessagePack.pack([@counter, id, args])
       @counter += 1
 
       @socket.write message
-      return tx, rx
+      return tx, rx.inbox
     end
   end
 
@@ -209,13 +204,13 @@ module Cocaine
   class Service < DefinedService
     def initialize(name, host=nil, port=nil)
       locator = Locator.new host, port
-      tx, rx = locator.resolve name
-      id, payload = rx.get
+      _, rx = locator.resolve name
+      id, payload = rx.receive
       if id == Default::Locator::ERROR_CODE
         raise ServiceError.new payload
       end
 
-      endpoint, version, dispatch = payload
+      endpoint, _, dispatch = payload
       super name, endpoint, dispatch
     end
   end
@@ -291,7 +286,7 @@ module Cocaine
         when RPC::INVOKE
           invoke session, *payload
         when RPC::CHUNK, RPC::ERROR, RPC::CHOKE
-          push session, *payload
+          push session, id, *payload
         else
           LOG.warn "Received unknown message: [#{session}, #{id}, #{payload}]"
       end
@@ -300,18 +295,20 @@ module Cocaine
     def invoke(session, event)
       actor = @actors[event]
       if actor
-        tx = RPC::TxStream.new(session, @socket)
-        rx = RPC::RxStream.new
-        @sessions[session] = [tx, rx]
-        actor.execute tx, rx
+        tx = TxChannel.new RPC::TXTREE, session, @socket
+        rx = RxChannel.new RPC::RXTREE
+        @sessions[session] = [tx, rx.outbox]
+        actor.execute tx, rx.inbox
       else
         LOG.warn "Received unregistered invocation event: '#{event}'"
       end
     end
 
-    def push(session, *payload)
+    def push(session, id, *payload)
       _, rx = @sessions[session]
-      rx << payload if rx
+      if rx
+        rx.push id, *payload
+      end
     end
 
     def terminate(errno, reason)

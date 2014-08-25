@@ -60,12 +60,12 @@ module CocaineTools
 
       Stage::stage "Stopping application '#{app}'" do
         _, rx = node.pause_app [app]
-        [nil, rx.get]
+        [nil, rx.receive]
       end
 
       Stage::stage "Starting application '#{app}' with profile '#{profile}'" do
         _, rx = node.start_app({ app => profile })
-        [nil, rx.get]
+        [nil, rx.receive]
       end
     end
   end
@@ -80,7 +80,7 @@ class App < Thor
 
     Stage::stage 'Fetching app list' do
       _, rx = storage.find :manifests, [:app]
-      [nil, rx.get]
+      [nil, rx.receive]
     end
   end
 

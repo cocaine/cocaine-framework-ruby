@@ -6,9 +6,9 @@ worker = Cocaine::WorkerFactory.create
 
 worker.on :ping do |response, request|
   Cocaine::LOG.debug 'Before read'
-  msg = request.get
-  Cocaine::LOG.debug "After read: '#{msg}'"
-  response.write msg[0]
+  id, msg = request.receive
+  Cocaine::LOG.debug "After read: '#{id}, #{msg}'"
+  response.write msg
   Cocaine::LOG.debug 'After write'
 end
 
