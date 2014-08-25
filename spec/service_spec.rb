@@ -42,7 +42,7 @@ describe 'Echo' do
   it 'should responds' do
     echo = Cocaine::Service.new :echo
     tx, rx = echo.enqueue :ping
-    tx.push 0, 'le message'
+    tx.write 'le message'
     message = rx.receive
     expect(message == 'le message')
   end

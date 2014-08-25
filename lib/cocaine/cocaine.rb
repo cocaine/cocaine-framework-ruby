@@ -6,6 +6,7 @@ require 'celluloid'
 require 'celluloid/io'
 
 module Cocaine
+  # For dynamic method creation. [Detail].
   class Meta
     def metaclass
       class << self
@@ -50,18 +51,21 @@ module Cocaine
     TXTREE = RXTREE
   end
 
+  # Base class for shared read channel state. [Detail].
   class Box
     def initialize(queue)
       @queue = queue
     end
   end
 
+  # Read-only part for shared reader state. [API].
   class Inbox < Box
     def receive(timeout=30.0)
       @queue.receive timeout
     end
   end
 
+  # Write-only part for shared reader state. [Detail].
   class Outbox < Box
     def initialize(queue, tree)
       super queue
@@ -83,7 +87,7 @@ module Cocaine
     end
   end
 
-  # Receive channel for clients.
+  # Shared reader state, that acts like channel. [Detail].
   class RxChannel
     attr_reader :inbox, :outbox
 
@@ -94,6 +98,7 @@ module Cocaine
     end
   end
 
+  # Writer channel. [API].
   class TxChannel < Meta
     def initialize(tree, session, socket)
       @session = session
@@ -107,7 +112,7 @@ module Cocaine
       end
     end
 
-    # Called by user (implicitly via dynamically named methods), when he/she wants to send message to the session.
+    private
     def push(id, *args)
       LOG.debug "-> [#{@session}, #{id}, #{args}]"
       @socket.write MessagePack.pack [@session, id, args]
@@ -119,6 +124,7 @@ module Cocaine
     end
   end
 
+  # [Detail].
   class DefinedService < Meta
     include Celluloid::IO
 
@@ -155,6 +161,7 @@ module Cocaine
       async.run
     end
 
+    private
     def run
       LOG.debug "Service '#{@name}' is running"
       unpacker = MessagePack::Unpacker.new
@@ -192,6 +199,7 @@ module Cocaine
     end
   end
 
+  # [API].
   class Locator < DefinedService
     def initialize(host=nil, port=nil)
       super :locator, [host || Default::Locator::HOST, port || Default::Locator::PORT], Default::Locator::API
@@ -201,6 +209,7 @@ module Cocaine
   class ServiceError < IOError
   end
 
+  # [API].
   class Service < DefinedService
     def initialize(name, host=nil, port=nil)
       locator = Locator.new host, port
@@ -215,6 +224,7 @@ module Cocaine
     end
   end
 
+  # [Detail].
   class WorkerActor
     include Celluloid
 
@@ -227,6 +237,7 @@ module Cocaine
     end
   end
 
+  # [API].
   class Worker
     include Celluloid
     include Celluloid::IO
@@ -323,6 +334,7 @@ module Cocaine
     end
   end
 
+  # [API].
   class WorkerFactory
     def self.create
       options = {}
