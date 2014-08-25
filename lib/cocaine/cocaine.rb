@@ -66,9 +66,11 @@ module Cocaine
       end
 
       def error(errno, reason)
+        @socket.write MessagePack.pack [@session, RPC::ERROR, [errno, reason]]
       end
 
       def close
+        @socket.write MessagePack.pack [@session, RPC::CHOKE, []]
       end
     end
   end
