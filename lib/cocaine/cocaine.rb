@@ -29,6 +29,7 @@ module Cocaine
               }
           ]
       }
+      ERROR_CODE = 1
     end
   end
 
@@ -41,6 +42,7 @@ module Cocaine
     ERROR = 5
     CHOKE = 6
 
+    # Receive stream for worker.
     class RxStream
       def initialize
         @queue = Celluloid::Mailbox.new
@@ -50,11 +52,12 @@ module Cocaine
         @queue << payload
       end
 
-      def read(timeout=5.0)
+      def receive(timeout=30.0)
         @queue.receive timeout
       end
     end
 
+    # Transmission stream for worker.
     class TxStream
       def initialize(session, socket)
         @session = session
@@ -75,6 +78,7 @@ module Cocaine
     end
   end
 
+  # Receive channel for clients.
   class RxChannel
     def initialize(tree)
       @tree = Hash.new
@@ -86,7 +90,7 @@ module Cocaine
       end
     end
 
-    # Called, when the client received a message from the runtime.
+    # Called by the library, when the client received a message from the runtime.
     def accept(id, payload)
       txtree = @tree[id]
       if txtree
@@ -98,20 +102,22 @@ module Cocaine
       @queue << [id, payload]
     end
 
+    # Called by user to receive the next message.
     def get(timeout=1.0)
       @queue.receive timeout
     end
   end
 
   class TxChannel
-    def initialize(tree, session, service)
+    def initialize(tree, session, socket)
       @session = session
-      @service = service
+      @socket = socket
     end
 
-    # Called by used (implicitly via dynamically named methods), when he/she wants to send message to the session.
+    # Called by user (implicitly via dynamically named methods), when he/she wants to send message to the session.
     def push(id, *args)
-      @service.push @session, id, *args
+      LOG.debug "-> [#{@session}, #{id}, #{args}]"
+      @socket.write MessagePack.pack([@session, id, args])
       # TODO: Complete.
       # Traverse the tree.
       # If new state - delete old methods for service.
@@ -180,7 +186,7 @@ module Cocaine
     def invoke(id, *args)
       LOG.debug "Invoking #{@name}[#{id}] with #{args}"
       method, txtree, rxtree = @dispatch[id]
-      tx, rx = @sessions[@counter] = [TxChannel.new(txtree, @counter, self), (RxChannel.new rxtree)]
+      tx, rx = @sessions[@counter] = [TxChannel.new(txtree, @counter, @socket), (RxChannel.new rxtree)]
 
       LOG.debug "-> [#{@counter}, #{id}, #{args}]"
       message = MessagePack.pack([@counter, id, args])
@@ -188,12 +194,6 @@ module Cocaine
 
       @socket.write message
       return tx, rx
-    end
-
-    def push(session, id, *args)
-      LOG.debug "Pushing #{@name}[#{id}] with #{args}"
-      LOG.debug "-> [#{session}, #{id}, #{args}]"
-      @socket.write MessagePack.pack([session, id, args])
     end
   end
 
@@ -211,7 +211,7 @@ module Cocaine
       locator = Locator.new host, port
       tx, rx = locator.resolve name
       id, payload = rx.get
-      if id == 1
+      if id == Default::Locator::ERROR_CODE
         raise ServiceError.new payload
       end
 
