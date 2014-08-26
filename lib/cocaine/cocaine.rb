@@ -15,6 +15,10 @@ module Cocaine
     end
   end
 
+  METHOD_ID = 0
+  TX_TREE_ID = 1
+  RX_TREE_ID = 2
+
   module Default
     module Locator
       HOST = 'localhost'
@@ -103,24 +107,40 @@ module Cocaine
     def initialize(tree, session, socket)
       @session = session
       @socket = socket
-
-      tree.each do |id, (method, _, _)|
-        LOG.debug "Defined '#{method}' method for tx channel"
-        self.metaclass.send(:define_method, method) do |*args|
-          push id, *args
-        end
-      end
+      @tree = nil
+      rebind tree
     end
 
     private
     def push(id, *args)
       LOG.debug "-> [#{@session}, #{id}, #{args}]"
       @socket.write MessagePack.pack [@session, id, args]
-      # TODO: Complete.
-      # Traverse the tree.
-      # If new state - delete old methods for service.
-      # Create message.
-      # Push message.
+      rebind @tree[id][Cocaine::TX_TREE_ID]
+    end
+
+    def rebind(new)
+      if new.nil?
+        LOG.debug 'Found recursive leaf - doing nothing with tx channel'
+        return
+      end
+
+      old = @tree || Hash.new
+      old.each do |_, (method, _, _)|
+        LOG.debug "Removed '#{method}' method for tx channel"
+        self.metaclass.send(:define_method, method) do |*|
+          raise Exception.new "Method '#{method}' is removed"
+        end
+      end
+
+      new ||= Hash.new
+      new.each do |id, (method, _, _)|
+        LOG.debug "Defined '#{method}' method for tx channel"
+        self.metaclass.send(:define_method, method) do |*args|
+          push id, *args
+        end
+      end
+
+      @tree = new
     end
   end
 
