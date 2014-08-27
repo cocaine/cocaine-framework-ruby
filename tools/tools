@@ -26,7 +26,7 @@ module CocaineTools
         MessagePack.pack JSON.parse File.read File.join path, 'manifest.json'
       end
 
-      name ||= File.basename path
+      name ||= File.basename File.absolute_path path
 
       tmpdir = Dir.mktmpdir 'cocaine-app-archive'
       tmpfile = File.join(tmpdir, "#{name}.tar.gz")
@@ -47,7 +47,7 @@ module CocaineTools
         storage.write :manifests, name, manifest, [:app]
       end
 
-      Stage::stage 'Uploading archive' do
+      Stage::stage "Uploading '#{name}' application" do
         storage.write :apps, name, archive, [:app]
       end
     end
@@ -85,8 +85,9 @@ class App < Thor
   end
 
   desc 'upload PATH', 'upload application from PATH'
+  option :name
   def upload(path=Dir.pwd)
-    CocaineTools::App::upload path
+    CocaineTools::App::upload path, options[:name]
   rescue Exception => err
     puts err
     exit(1)
