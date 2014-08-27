@@ -7,22 +7,20 @@ require 'rainbow/ext/string'
 
 require_relative '../lib/cocaine'
 
-module Stage
-  def self.stage(prompt)
-    puts "[  --  ] #{prompt} ..."
-    result, magic = yield
-    puts "\e[A\r[#{'  OK  '.color :green}] #{prompt}#{result ? '    ' : ": #{magic.to_s.color :green}"}"
-    return result
-  rescue Exception => err
-    puts "\e[A\r[#{' FAIL '.color :red}] #{prompt}: #{err.to_s.color :red}"
-    raise err
-  end
+def stage(prompt)
+  puts "[  --  ] #{prompt} ..."
+  result, magic = yield
+  puts "\e[A\r[#{'  OK  '.color :green}] #{prompt}#{result ? '    ' : ": #{magic.to_s.color :green}"}"
+  return result
+rescue Exception => err
+  puts "\e[A\r[#{' FAIL '.color :red}] #{prompt}: #{err.to_s.color :red}"
+  raise err
 end
 
 module CocaineTools
   module App
     def self.upload(path, name=nil)
-      manifest = Stage::stage "Locating and reading manifest from '#{path}'" do
+      manifest = stage "Locating and reading manifest from '#{path}'" do
         MessagePack.pack JSON.parse File.read File.join path, 'manifest.json'
       end
 
@@ -30,7 +28,7 @@ module CocaineTools
 
       tmpdir = Dir.mktmpdir 'cocaine-app-archive'
       tmpfile = File.join(tmpdir, "#{name}.tar.gz")
-      archive = Stage::stage "Creating archive from '#{path}'" do
+      archive = stage "Creating archive from '#{path}'" do
         begin
           `tar -czf #{tmpfile} -C #{path} .`
           MessagePack.pack File.read tmpfile
@@ -39,15 +37,15 @@ module CocaineTools
         end
       end
 
-      storage = Stage::stage 'Connecting to the Cocaine' do
+      storage = stage 'Connecting to the Cocaine' do
         Cocaine::Service.new :storage
       end
 
-      Stage::stage 'Uploading manifest' do
+      stage 'Uploading manifest' do
         storage.write :manifests, name, manifest, [:app]
       end
 
-      Stage::stage "Uploading '#{name}' application" do
+      stage "Uploading '#{name}' application" do
         storage.write :apps, name, archive, [:app]
       end
     end
@@ -58,12 +56,12 @@ module CocaineTools
         Cocaine::Service.new :node
       end
 
-      Stage::stage "Stopping application '#{app}'" do
+      stage "Stopping application '#{app}'" do
         _, rx = node.pause_app [app]
         [nil, rx.receive]
       end
 
-      Stage::stage "Starting application '#{app}' with profile '#{profile}'" do
+      stage "Starting application '#{app}' with profile '#{profile}'" do
         _, rx = node.start_app({ app => profile })
         [nil, rx.receive]
       end
@@ -74,11 +72,11 @@ end
 class App < Thor
   desc 'list', 'apps list'
   def list
-    storage = Stage::stage 'Connecting to the Cocaine' do
+    storage = stage 'Connecting to the Cocaine' do
       Cocaine::Service.new :storage
     end
 
-    Stage::stage 'Fetching app list' do
+    stage 'Fetching app list' do
       _, rx = storage.find :manifests, [:app]
       [nil, rx.receive]
     end
