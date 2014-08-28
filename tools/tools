@@ -97,9 +97,44 @@ class App < Thor
   end
 end
 
+class Profile < Thor
+  desc 'list', 'profiles list'
+  def list
+    storage = stage 'Connecting to the Cocaine' do
+      Cocaine::Service.new :storage
+    end
+
+    stage 'Fetching profile list' do
+      _, rx = storage.find :profiles, [:profile]
+      [nil, rx.receive]
+    end
+  end
+
+  desc 'upload NAME PATH', 'upload NAME profile from PATH'
+  def upload(name, path)
+    content = stage "Reading profile from '#{path}'" do
+      MessagePack.pack JSON.parse File.read path
+    end
+
+    storage = stage 'Connecting to the Cocaine' do
+      Cocaine::Service.new :storage
+    end
+
+    stage "Uploading '#{name}' profile" do
+      storage.write :profiles, name, content, [:profile]
+    end
+  rescue Exception => err
+    puts err
+    exit(1)
+  end
+end
+
 class CocaineToolsCLI < Thor
   desc 'app SUBCOMMAND', 'Application specific tools'
   subcommand :app, App
+
+  desc 'profile SUBCOMMAND', 'Profile specific tools'
+  subcommand :profile, Profile
 end
 
 # Suppress internal loggers.
