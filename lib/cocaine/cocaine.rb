@@ -21,7 +21,7 @@ module Cocaine
 
   module Default
     module Locator
-      HOST = 'localhost'
+      HOST = '::'
       PORT = 10053
       API = {
           0 => [
@@ -148,33 +148,30 @@ module Cocaine
   class DefinedService < Meta
     include Celluloid::IO
 
-    def initialize(name, endpoint, dispatch)
+    def initialize(name, endpoints, dispatch)
       @name = name
-      @endpoint = endpoint
       @dispatch = dispatch
 
       @counter = 1
       @sessions = Hash.new
 
-      host, port = endpoint
-      LOG.debug "Initializing '#{name}' service at '#{host}:#{port}'"
+      LOG.debug "Initializing '#{name}' service - with possible endpoints: #{endpoints}"
+      endpoints.each do |host, port|
+        LOG.debug "Trying to connect to '#{name}' at '[#{host}]:#{port}'"
+        begin
+          @endpoint = [host, port]
+          @socket = TCPSocket.new(host, port)
+          break
+        rescue IOError => err
+          LOG.warn "Failed: #{err}"
+        end
+      end
+
       dispatch.each do |id, (method, _, _)|
         LOG.debug "Defined '#{method}' method for service #{self}"
         self.metaclass.send(:define_method, method) do |*args|
           LOG.debug "Invoking #{@name}.#{method}(#{args})"
           return invoke(id, *args)
-        end
-      end
-
-      addrinfo = Addrinfo.getaddrinfo(host, nil, nil, :STREAM)
-      LOG.debug "Connecting to the '#{name}' service at '#{host}:#{port}'"
-      addrinfo.each do |addr|
-        begin
-          LOG.debug "Trying: #{addr.inspect}"
-          @socket = TCPSocket.new(addr.ip_address, port)
-          break
-        rescue IOError => err
-          LOG.warn "Failed: #{err}"
         end
       end
 
@@ -222,7 +219,7 @@ module Cocaine
   # [API].
   class Locator < DefinedService
     def initialize(host=nil, port=nil)
-      super :locator, [host || Default::Locator::HOST, port || Default::Locator::PORT], Default::Locator::API
+      super :locator, [[host || Default::Locator::HOST, port || Default::Locator::PORT]], Default::Locator::API
     end
   end
 
@@ -239,8 +236,8 @@ module Cocaine
         raise ServiceError.new payload
       end
 
-      endpoint, _, dispatch = payload
-      super name, endpoint, dispatch
+      endpoints, _, dispatch = payload
+      super name, endpoints, dispatch
     end
   end
 
@@ -278,7 +275,7 @@ module Cocaine
     end
 
     def run
-      LOG.debug "Starting worker '#{@app}' with uuid '#{@uuid}' ad '#{@endpoint}'"
+      LOG.debug "Starting worker '#{@app}' with uuid '#{@uuid}' at '#{@endpoint}'"
       @socket = UNIXSocket.open(@endpoint)
       async.handshake
       async.health
@@ -287,14 +284,16 @@ module Cocaine
 
     private
     def handshake
+      LOG.debug '<- Handshake'
       @socket.write MessagePack::pack([1, RPC::HANDSHAKE, [@uuid]])
     end
 
     def health
       heartbeat = MessagePack::pack([1, RPC::HEARTBEAT, []])
       loop do
+        LOG.debug '<- Heartbeat'
         @socket.write heartbeat
-        sleep 10.0
+        sleep 5.0
       end
     end
 
@@ -309,6 +308,7 @@ module Cocaine
     end
 
     def received(session, id, payload)
+      LOG.debug "-> Message(#{session}, #{id}, #{payload})"
       case id
         when RPC::HANDSHAKE
         when RPC::HEARTBEAT
@@ -344,7 +344,7 @@ module Cocaine
 
     def terminate(errno, reason)
       LOG.warn "Terminating [#{errno}]: #{reason}"
-      exit(errno)
+      exit errno
     end
 
     def finalize

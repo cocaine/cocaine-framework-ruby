@@ -52,17 +52,17 @@ module CocaineTools
 
     # noinspection RubyResolve
     def self.restart(app, profile)
-      node = Stage::stage 'Connecting to the Cocaine' do
+      node = stage 'Connecting to the Cocaine' do
         Cocaine::Service.new :node
       end
 
       stage "Stopping application '#{app}'" do
-        _, rx = node.pause_app [app]
+        _, rx = node.pause_app app
         [nil, rx.receive]
       end
 
       stage "Starting application '#{app}' with profile '#{profile}'" do
-        _, rx = node.start_app({ app => profile })
+        _, rx = node.start_app app, profile
         [nil, rx.receive]
       end
     end
@@ -140,5 +140,4 @@ end
 # Suppress internal loggers.
 Celluloid.logger = nil
 Cocaine::LOG.level = Logger::ERROR
-
 CocaineToolsCLI.start(ARGV)
