@@ -316,8 +316,10 @@ module Cocaine
           terminate *payload
         when RPC::INVOKE
           invoke session, *payload
-        when RPC::CHUNK, RPC::ERROR, RPC::CHOKE
+        when RPC::CHUNK, RPC::ERROR
           push session, id, *payload
+        when RPC::CHOKE
+          push session, id, []
         else
           LOG.warn "Received unknown message: [#{session}, #{id}, #{payload}]"
       end
@@ -367,6 +369,75 @@ module Cocaine
         opts.on('--endpoint ENDPOINT', 'Worker endpoint') { |a| options[:endpoint] = a }
       end.parse!
       return Worker.new(options[:app], options[:uuid], options[:endpoint])
+    end
+  end
+
+  class Rack
+    def self.run(app)
+      worker = Cocaine::WorkerFactory.create
+
+      worker.on :http do |response, request|
+        id, payload = request.receive
+        Cocaine::LOG.debug "After receive: '#{{:id => id, :payload => payload}}'"
+
+        case id
+          when Cocaine::RPC::CHUNK
+            method, url, version, headers, body = MessagePack::unpack payload
+            Cocaine::LOG.debug "After unpack: '#{id}, #{[method, url, version, headers, body]}'"
+
+            env = Hash[*headers.flatten]
+            parsed_url = URI.parse("http://#{env['Host']}#{url}")
+            default_hostname = parsed_url.hostname  || 'localhost'
+            default_port =  parsed_url.port || '80'
+
+            # noinspection RubyStringKeysInHashInspection
+            env.update(
+                {
+                    'GATEWAY_INTERFACE' => 'CGI/1.1',
+                    'PATH_INFO'         => parsed_url.path || '',
+                    'QUERY_STRING'      => parsed_url.query || '',
+                    'REMOTE_ADDR'       => '::1',
+                    'REMOTE_HOST'       => 'localhost',
+                    'REQUEST_METHOD'    => method,
+                    'REQUEST_URI'       => url,
+                    'SCRIPT_NAME'       => '',
+                    'SERVER_NAME'       => default_hostname,
+                    'SERVER_PORT'       => default_port.to_s,
+                    'SERVER_PROTOCOL'   => "HTTP/#{version}",
+                    'rack.version'      => [1, 5],
+                    'rack.input'        =>  body,
+                    'rack.errors'       => $stderr,
+                    'rack.multithread'  => true,
+                    'rack.multiprocess' => false,
+                    'rack.run_once'     => false,
+                    'rack.url_scheme'   => 'http',
+                    'HTTP_VERSION'      => "HTTP/#{version}",
+                    'REQUEST_PATH'      => parsed_url.path,
+                }
+            )
+
+            Cocaine::LOG.debug "ENV: #{env}"
+
+            now                        = Time.now
+            code, headers, body        = app.call env
+            headers['X-Response-Took'] = Time.now - now
+            response.write MessagePack.pack [code, headers.to_a]
+            body.each do |item|
+              response.write(item)
+            end
+
+            body.close if body.respond_to?(:close)
+
+            response.close
+          when Cocaine::RPC::ERROR
+          when Cocaine::RPC::CHOKE
+          else
+            # Type code here.
+        end
+      end
+
+      worker.run
+      sleep
     end
   end
 end
