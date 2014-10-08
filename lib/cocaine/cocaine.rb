@@ -114,7 +114,7 @@ module Cocaine
 
     private
     def push(id, *args)
-      LOG.debug "-> [#{@session}, #{id}, #{args}]"
+      LOG.debug "<- [#{@session}, #{id}, #{args}]"
       @socket.write MessagePack.pack [@session, id, args]
       rebind @tree[id][Cocaine::TX_TREE_ID]
     end
@@ -192,7 +192,7 @@ module Cocaine
     end
 
     def received(session, id, payload)
-      LOG.debug "<- [#{session}, #{id}, #{payload}]"
+      LOG.debug "-> [#{session}, #{id}, #{payload}]"
       _, rx = @sessions[session]
       if rx
         rx.push id, payload
@@ -208,7 +208,7 @@ module Cocaine
       rx = RxChannel.new rxtree
       @sessions[@counter] = [tx, rx.outbox]
 
-      LOG.debug "-> [#{@counter}, #{id}, #{args}]"
+      LOG.debug "<- [#{@counter}, #{id}, #{args}]"
       message = MessagePack.pack([@counter, id, args])
       @counter += 1
 
