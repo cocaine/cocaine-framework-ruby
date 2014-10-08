@@ -1,6 +1,7 @@
 require 'logger'
 require 'msgpack'
 require 'optparse'
+require 'uri'
 
 require 'celluloid'
 require 'celluloid/io'
@@ -373,7 +374,7 @@ module Cocaine
   end
 
   class Rack
-    def self.run(app)
+    def self.on(event)
       worker = Cocaine::WorkerFactory.create
 
       worker.on :http do |response, request|
@@ -419,7 +420,7 @@ module Cocaine
             Cocaine::LOG.debug "ENV: #{env}"
 
             now                        = Time.now
-            code, headers, body        = app.call env
+            code, headers, body        = yield env
             headers['X-Response-Took'] = Time.now - now
             response.write MessagePack.pack [code, headers.to_a]
             body.each do |item|
