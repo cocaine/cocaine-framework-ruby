@@ -129,15 +129,53 @@ class Profile < Thor
   end
 end
 
+class Runlist < Thor
+  desc 'edit NAME', 'edit NAME runlist'
+  def edit(name)
+    storage = stage 'Connecting to the Cocaine' do
+      Cocaine::Service.new :storage
+    end
+
+    runlist = stage "Reading '#{name}' runlist" do
+      tx, rx = storage.read :runlists, name
+      id, runlist = rx.receive
+      runlist
+    end
+
+    file = Tempfile.new('runlist')
+    begin
+      file.write JSON.generate MessagePack::unpack runlist
+    ensure
+      file.close
+    end
+
+    begin
+      system ENV['EDITOR'] || 'vim', file.path
+      file.open
+      content = MessagePack.pack JSON.parse file.read
+      stage "Uploading '#{name}' runlist" do
+        storage.write :runlists, name, content, [:runlist]
+      end
+    ensure
+      file.close
+      file.unlink
+    end
+  end
+end
+
 class CocaineToolsCLI < Thor
   desc 'app SUBCOMMAND', 'Application specific tools'
   subcommand :app, App
 
   desc 'profile SUBCOMMAND', 'Profile specific tools'
   subcommand :profile, Profile
+
+  desc 'runlist SUBCOMMAND', 'Runlist specific tools'
+  subcommand :runlist, Runlist
 end
 
 # Suppress internal loggers.
 Celluloid.logger = nil
 Cocaine::LOG.level = Logger::ERROR
+
 CocaineToolsCLI.start(ARGV)
