@@ -15,7 +15,7 @@ worker.on :ping do |response, request|
     when Cocaine::RPC::ERROR
     when Cocaine::RPC::CHOKE
     else
-      # type code here
+      # Type code here.
   end
 end
 
