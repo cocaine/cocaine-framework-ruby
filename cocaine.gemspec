@@ -10,16 +10,16 @@ Gem::Specification.new do |s|
   s.authors = ['Evgeny Safronov']
   s.email   = ['division494@gmail.com']
 
-  s.files = `git ls-files`.split("\n")
+  s.files = %w(lib/cocaine.rb lib/cocaine/cocaine.rb lib/cocaine/version.rb)
   s.extensions = []
 
   s.summary = 'Ruby/Cocaine library'
   s.description = 'Cocaine Framework is a framework for simplifying development both server-side and client-side
 applications.'
 
-  s.add_development_dependency 'rspec', '~> 0'
+  s.add_development_dependency 'rspec', '~> 3.1'
 
   s.add_runtime_dependency 'msgpack', '~> 0.5'
-  s.add_runtime_dependency 'celluloid', '~> 0.13'
-  s.add_runtime_dependency 'celluloid-io', '~> 0.13'
+  s.add_runtime_dependency 'celluloid', '~> 0.16'
+  s.add_runtime_dependency 'celluloid-io', '~> 0.16'
 end
