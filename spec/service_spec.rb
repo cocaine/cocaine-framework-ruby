@@ -43,9 +43,6 @@ describe 'Echo' do
     echo = Cocaine::Service.new :echo
     tx, rx = echo.enqueue :ping
     tx.write 'le message'
-    tx.write 'le message'
-    tx.error 1, 'le message'
-    tx.write 'le message'
     message = rx.receive
     expect(message == 'le message')
   end
