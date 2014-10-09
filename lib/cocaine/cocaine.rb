@@ -302,8 +302,8 @@ module Cocaine
     def serve
       unpacker = MessagePack::Unpacker.new
       loop do
-        data = @socket.readpartial(4096)
-        unpacker.feed_each(data) do |decoded|
+        data = @socket.readpartial 4096
+        unpacker.feed_each data do |decoded|
           async.received *decoded
         end
       end
