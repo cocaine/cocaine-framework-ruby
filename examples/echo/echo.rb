@@ -11,12 +11,15 @@ worker.on :ping do |response, request|
     when Cocaine::RPC::CHUNK
       Cocaine::LOG.debug "After read: '#{id}, #{msg}'"
       response.write msg
-      Cocaine::LOG.debug 'After write'
     when Cocaine::RPC::ERROR
+      Cocaine::LOG.debug 'Error event'
     when Cocaine::RPC::CHOKE
+      Cocaine::LOG.debug 'Choke event'
     else
-      # Type code here.
+      Cocaine::LOG.debug 'Unknown event'
   end
+
+  Cocaine::LOG.debug 'After write'
 end
 
 worker.run
