@@ -252,6 +252,7 @@ module Cocaine
 
     def execute(tx, rx)
       @block.call tx, rx
+      yield
     end
   end
 
@@ -320,7 +321,8 @@ module Cocaine
         when RPC::CHUNK, RPC::ERROR
           push session, id, *payload
         when RPC::CHOKE
-          push session, id, []
+          LOG.debug "Closing #{session} session"
+          @sessions.delete session
         else
           LOG.warn "Received unknown message: [#{session}, #{id}, #{payload}]"
       end
@@ -332,7 +334,10 @@ module Cocaine
         tx = TxChannel.new RPC::TXTREE, session, @socket
         rx = RxChannel.new RPC::RXTREE
         @sessions[session] = [tx, rx.outbox]
-        actor.execute tx, rx.inbox
+        actor.execute tx, rx.inbox do
+          LOG.debug '<- Choke'
+          tx.close
+        end
       else
         LOG.warn "Received unregistered invocation event: '#{event}'"
       end
