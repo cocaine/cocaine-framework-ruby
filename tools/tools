@@ -164,6 +164,17 @@ class Runlist < Thor
 end
 
 class CocaineToolsCLI < Thor
+  desc 'info NAME', 'Fetch NAME app info'
+  def info(app)
+    service = Cocaine::Service.new app
+    loop do
+      tx, rx = service.info
+      id, info = rx.receive
+      puts :info => info
+      sleep 0.1
+    end
+  end
+
   desc 'app SUBCOMMAND', 'Application specific tools'
   subcommand :app, App
 
