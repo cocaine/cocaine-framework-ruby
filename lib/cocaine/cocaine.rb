@@ -339,9 +339,11 @@ module Cocaine
     end
 
     def push(session, id, *payload)
-      _, rx = @sessions[session]
+      tx, rx = @sessions[session]
       if rx
         rx.push id, *payload
+      else
+        raise Exception.new "received push event on unknown #{session} session"
       end
     end
 
