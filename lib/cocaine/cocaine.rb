@@ -453,8 +453,6 @@ module Cocaine
             end
 
             body.close if body.respond_to?(:close)
-
-            response.close
           when Cocaine::RPC::ERROR
           when Cocaine::RPC::CHOKE
           else
