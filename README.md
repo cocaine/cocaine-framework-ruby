@@ -1,6 +1,8 @@
 Introducing cocaine-framework-ruby
 ========================================
 
+[![Code Climate](https://codeclimate.com/github/cocaine/cocaine-framework-ruby/badges/gpa.svg)](https://codeclimate.com/github/cocaine/cocaine-framework-ruby)
+
 Here you are, almighty Ruby programmers! Introducing another framework for our Cocaine Cloud.
 This time it is cocaine-framework-ruby.
 
