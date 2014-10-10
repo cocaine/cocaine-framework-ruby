@@ -4,7 +4,7 @@ require 'logger'
 
 module Cocaine
   LOG = Logger.new STDERR
-  LOG.level = Logger::DEBUG
+  LOG.level = ENV['WORKER_LOG_LEVEL'] || Logger::DEBUG
 end
 
 require 'cocaine/version'
