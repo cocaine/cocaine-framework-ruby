@@ -58,12 +58,12 @@ module CocaineTools
 
       stage "Stopping application '#{app}'" do
         _, rx = node.pause_app app
-        [nil, rx.receive]
+        [nil, rx.recv]
       end
 
       stage "Starting application '#{app}' with profile '#{profile}'" do
         _, rx = node.start_app app, profile
-        [nil, rx.receive]
+        [nil, rx.recv]
       end
     end
   end
@@ -78,7 +78,7 @@ class App < Thor
 
     stage 'Fetching app list' do
       _, rx = storage.find :manifests, [:app]
-      [nil, rx.receive]
+      [nil, rx.recv]
     end
   end
 
@@ -106,7 +106,7 @@ class Profile < Thor
 
     stage 'Fetching profile list' do
       _, rx = storage.find :profiles, [:profile]
-      [nil, rx.receive]
+      [nil, rx.recv]
     end
   end
 
@@ -138,7 +138,7 @@ class Runlist < Thor
 
     runlist = stage "Reading '#{name}' runlist" do
       tx, rx = storage.read :runlists, name
-      id, runlist = rx.receive
+      id, runlist = rx.recv
       runlist
     end
 
@@ -169,7 +169,7 @@ class CocaineToolsCLI < Thor
     service = Cocaine::Service.new app
     loop do
       tx, rx = service.info
-      id, info = rx.receive
+      id, info = rx.recv
       puts :info => info
       sleep 0.1
     end

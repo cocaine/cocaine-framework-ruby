@@ -17,12 +17,12 @@ server.mount_proc '/' do |req, res|
   tx, rx = service.enqueue :http
   tx.write MessagePack::pack payload
 
-  id, payload = rx.receive
+  id, payload = rx.recv
   case id
     when 0
       code, headers = MessagePack::unpack payload[0]
       Cocaine::LOG.debug "#{id}, #{code} :: #{headers}"
-      id, body = rx.receive
+      id, body = rx.recv
       body = body[0]
 
       Cocaine::LOG.debug :headers => headers

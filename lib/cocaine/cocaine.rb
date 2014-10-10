@@ -61,7 +61,7 @@ module Cocaine
   # [API]
   # Read-only part for shared reader state.
   class RxMailbox < Mailbox
-    def receive(timeout=30.0)
+    def recv(timeout=30.0)
       @queue.receive timeout
     end
   end
@@ -235,7 +235,7 @@ module Cocaine
     def initialize(name, host=nil, port=nil)
       locator = Locator.new host, port
       tx, rx = locator.resolve name
-      id, payload = rx.receive
+      id, payload = rx.recv
       if id == Default::Locator::ERROR_CODE
         raise ServiceError.new payload
       end
@@ -403,7 +403,7 @@ module Cocaine
       worker = Cocaine::WorkerFactory.create
 
       worker.on :http do |response, request|
-        id, payload = request.receive
+        id, payload = request.recv
         Cocaine::LOG.debug "After receive: '#{{:id => id, :payload => payload}}'"
 
         case id
