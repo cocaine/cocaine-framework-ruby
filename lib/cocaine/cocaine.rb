@@ -125,7 +125,7 @@ module Cocaine
       end
 
       old = @tree || Hash.new
-      old.each do |_, (method, _, _)|
+      old.each do |id, (method, txtree, rxtree)|
         LOG.debug "Removed '#{method}' method for tx channel"
         self.metaclass.send(:define_method, method) do |*|
           raise Exception.new "Method '#{method}' is removed"
@@ -133,7 +133,7 @@ module Cocaine
       end
 
       new ||= Hash.new
-      new.each do |id, (method, _, _)|
+      new.each do |id, (method, txtree, rxtree)|
         LOG.debug "Defined '#{method}' method for tx channel"
         self.metaclass.send(:define_method, method) do |*args|
           push id, *args
@@ -168,7 +168,7 @@ module Cocaine
         end
       end
 
-      dispatch.each do |id, (method, _, _)|
+      dispatch.each do |id, (method, txtree, rxtree)|
         LOG.debug "Defined '#{method}' method for service #{self}"
         self.metaclass.send(:define_method, method) do |*args|
           LOG.debug "Invoking #{@name}.#{method}(#{args})"
@@ -193,7 +193,7 @@ module Cocaine
 
     def received(session, id, payload)
       LOG.debug "-> [#{session}, #{id}, #{payload}]"
-      _, rx = @sessions[session]
+      tx, rx = @sessions[session]
       if rx
         rx.push id, payload
       else
@@ -240,7 +240,7 @@ module Cocaine
         raise ServiceError.new payload
       end
 
-      endpoints, _, dispatch = payload
+      endpoints, version, dispatch = payload
       super name, endpoints, dispatch
     end
   end
@@ -376,7 +376,7 @@ module Cocaine
     def self.create
       options = {}
       OptionParser.new do |opts|
-        opts.banner = 'Usage: <your_worker.rb> --app NAME --locator ADDRESS --uuid UUID --endpoint ENDPOINT'
+        opts.banner = 'Usage: <worker.rb> --app NAME --locator ADDRESS --uuid UUID --endpoint ENDPOINT'
 
         opts.on('--app NAME', 'Worker name') do |app|
           options[:app] = app
