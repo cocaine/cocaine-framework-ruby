@@ -40,13 +40,7 @@ module Cocaine
   end
 
   module RPC
-    HANDSHAKE = 0
-    HEARTBEAT = 1
-    TERMINATE = 2
-    INVOKE = 3
-    CHUNK = 4
-    ERROR = 5
-    CHOKE = 6
+    HANDSHAKE, HEARTBEAT, TERMINATE, INVOKE, CHUNK, ERROR, CHOKE = (0..6).to_a
 
     RXTREE = {
         CHUNK => ['write', nil, {}],
