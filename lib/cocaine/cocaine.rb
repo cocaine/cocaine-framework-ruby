@@ -371,10 +371,21 @@ module Cocaine
       OptionParser.new do |opts|
         opts.banner = 'Usage: <your_worker.rb> --app NAME --locator ADDRESS --uuid UUID --endpoint ENDPOINT'
 
-        opts.on('--app NAME', 'Worker name') { |a| options[:app] = a }
-        opts.on('--locator ADDRESS', 'Locator address') { |a| options[:locator] = a }
-        opts.on('--uuid UUID', 'Worker uuid') { |a| options[:uuid] = a }
-        opts.on('--endpoint ENDPOINT', 'Worker endpoint') { |a| options[:endpoint] = a }
+        opts.on('--app NAME', 'Worker name') do |app|
+          options[:app] = app
+        end
+
+        opts.on('--locator ADDRESS', 'Locator address') do |endpoint|
+          options[:locator] = endpoint
+        end
+
+        opts.on('--uuid UUID', 'Worker uuid') do |uuid|
+          options[:uuid] = uuid
+        end
+
+        opts.on('--endpoint ENDPOINT', 'Worker endpoint') do |endpoint|
+          options[:endpoint] = endpoint
+        end
       end.parse!
       return Worker.new(options[:app], options[:uuid], options[:endpoint])
     end
