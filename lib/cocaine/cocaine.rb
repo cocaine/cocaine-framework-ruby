@@ -402,8 +402,8 @@ module Cocaine
     def self.on(event)
       worker = Cocaine::WorkerFactory.create
 
-      worker.on :http do |response, request|
-        id, payload = request.recv
+      worker.on :http do |res, req|
+        id, payload = req.recv
         Cocaine::LOG.debug "After receive: '#{{:id => id, :payload => payload}}'"
 
         case id
@@ -447,9 +447,9 @@ module Cocaine
             now                        = Time.now
             code, headers, body        = yield env
             headers['X-Response-Took'] = Time.now - now
-            response.write MessagePack.pack [code, headers.to_a]
+            res.write MessagePack.pack [code, headers.to_a]
             body.each do |item|
-              response.write(item)
+              res.write(item)
             end
 
             body.close if body.respond_to?(:close)
