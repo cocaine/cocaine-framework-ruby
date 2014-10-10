@@ -56,27 +56,30 @@ module Cocaine
     TXTREE = RXTREE
   end
 
-  # Base class for shared read channel state. [Detail].
-  class Box
+  # [Detail]
+  # Base class for shared read channel state.
+  class Mailbox
     def initialize(queue)
       @queue = queue
     end
   end
 
-  # Read-only part for shared reader state. [API].
-  class Inbox < Box
+  # [API]
+  # Read-only part for shared reader state.
+  class RxMailbox < Mailbox
     def receive(timeout=30.0)
       @queue.receive timeout
     end
   end
 
-  # Write-only part for shared reader state. [Detail].
-  class Outbox < Box
+  # [Detail]
+  # Write-only part for shared reader state.
+  class TxMailbox < Mailbox
     def initialize(queue, tree)
       super queue
 
       @tree = Hash.new
-      tree.each do |id, (_, txtree, _)|
+      tree.each do |id, (method, txtree, rxtree)|
         @tree[id] = txtree
       end
     end
@@ -92,18 +95,20 @@ module Cocaine
     end
   end
 
-  # Shared reader state, that acts like channel. [Detail].
+  # [Detail]
+  # Shared reader state, that acts like channel. Need for channel splitting between the library and a user.
   class RxChannel
-    attr_reader :inbox, :outbox
+    attr_reader :tx, :rx
 
     def initialize(tree)
       queue = Celluloid::Mailbox.new
-      @inbox = Inbox.new queue
-      @outbox = Outbox.new queue, tree
+      @tx = TxMailbox.new queue, tree
+      @rx = RxMailbox.new queue
     end
   end
 
-  # Writer channel. [API].
+  # [API]
+  # Writer channel. Patches itself with current state, providing methods described in tx tree.
   class TxChannel < Meta
     def initialize(tree, session, socket)
       @session = session
@@ -145,7 +150,8 @@ module Cocaine
     end
   end
 
-  # [Detail].
+  # [Detail]
+  # Service actor, which can define itself via its dispatch tree.
   class DefinedService < Meta
     include Celluloid::IO
 
@@ -202,23 +208,25 @@ module Cocaine
     end
 
     def invoke(id, *args)
-      LOG.debug "Invoking #{@name}[#{id}] with #{args}"
-      _, txtree, rxtree = @dispatch[id]
-      tx = TxChannel.new txtree, @counter, @socket
-      rx = RxChannel.new rxtree
-      @sessions[@counter] = [tx, rx.outbox]
+      method, txtree, rxtree = @dispatch[id]
+      LOG.debug "Invoking #{@name}[#{id}=#{method}] with #{args}"
+
+      txchan = TxChannel.new txtree, @counter, @socket
+      rxchan = RxChannel.new rxtree
+      @sessions[@counter] = [txchan, rxchan.tx]
 
       LOG.debug "<- [#{@counter}, #{id}, #{args}]"
       message = MessagePack.pack([@counter, id, args])
       @counter += 1
 
       @socket.write message
-      return tx, rx.inbox
+      return txchan, rxchan.rx
     end
   end
 
-  # [API].
+  # [API]
   class Locator < DefinedService
+    # TODO: Import host/port via ENV.
     def initialize(host=nil, port=nil)
       super :locator, [[host || Default::Locator::HOST, port || Default::Locator::PORT]], Default::Locator::API
     end
@@ -227,11 +235,12 @@ module Cocaine
   class ServiceError < IOError
   end
 
-  # [API].
+  # [API]
+  # Service class. All you need is name and (optionally) locator endpoint.
   class Service < DefinedService
     def initialize(name, host=nil, port=nil)
       locator = Locator.new host, port
-      _, rx = locator.resolve name
+      tx, rx = locator.resolve name
       id, payload = rx.receive
       if id == Default::Locator::ERROR_CODE
         raise ServiceError.new payload
@@ -242,7 +251,8 @@ module Cocaine
     end
   end
 
-  # [Detail].
+  # [Detail]
+  # Special worker actor for RAII.
   class WorkerActor
     include Celluloid
 
@@ -256,7 +266,8 @@ module Cocaine
     end
   end
 
-  # [API].
+  # [API]
+  # Worker class.
   class Worker
     include Celluloid
     include Celluloid::IO
@@ -331,12 +342,12 @@ module Cocaine
     def invoke(session, event)
       actor = @actors[event]
       if actor
-        tx = TxChannel.new RPC::TXTREE, session, @socket
-        rx = RxChannel.new RPC::RXTREE
-        @sessions[session] = [tx, rx.outbox]
-        actor.execute tx, rx.inbox do
+        txchan = TxChannel.new RPC::TXTREE, session, @socket
+        rxchan = RxChannel.new RPC::RXTREE
+        @sessions[session] = [txchan, rxchan.tx]
+        actor.execute txchan, rxchan.rx do
           LOG.debug '<- Choke'
-          tx.close
+          txchan.close
         end
       else
         LOG.warn "Received unregistered invocation event: '#{event}'"
