@@ -46,4 +46,12 @@ describe 'Echo' do
     message = rx.receive
     expect(message == 'le message')
   end
+
+  it 'should return error on invalid event' do
+    echo = Cocaine::Service.new :echo
+    tx, rx = echo.enqueue :invalid
+    id, message = rx.receive
+    expect(1 == id)
+    expect('le message' == message)
+  end
 end

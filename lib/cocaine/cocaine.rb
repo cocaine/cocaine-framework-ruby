@@ -335,16 +335,18 @@ module Cocaine
 
     def invoke(session, event)
       actor = @actors[event]
+      txchan = TxChannel.new RPC::TXTREE, session, @socket
+      rxchan = RxChannel.new RPC::RXTREE
+
       if actor
-        txchan = TxChannel.new RPC::TXTREE, session, @socket
-        rxchan = RxChannel.new RPC::RXTREE
         @sessions[session] = [txchan, rxchan.tx]
         actor.execute txchan, rxchan.rx do
           LOG.debug '<- Choke'
           txchan.close
         end
       else
-        LOG.warn "Received unregistered invocation event: '#{event}'"
+        LOG.warn "Event '#{event}' is not registered"
+        txchan.error -1, "event '#{event}' is not registered"
       end
     end
 
