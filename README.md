@@ -15,4 +15,4 @@ Framework provides next features:
  * Explicit future-based asynchronous backend to maximize performance without using threads.
  * Fiber-aware asynchronous backend to make your asynchronous code look like it is synchronous.
  * Integration with our http-proxy for simple applications.
- * [In the nearest future] Ruby on Rails support.
+ * Ruby on Rails support.
