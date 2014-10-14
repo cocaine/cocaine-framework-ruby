@@ -22,8 +22,8 @@ module Cocaine
 
   module Default
     module Locator
-      HOST = '::'
-      PORT = 10053
+      $host = '::'
+      $port = 10053
       API = {
           0 => [
               'resolve',
@@ -220,9 +220,8 @@ module Cocaine
 
   # [API]
   class Locator < DefinedService
-    # TODO: Import host/port via ENV.
     def initialize(host=nil, port=nil)
-      super :locator, [[host || Default::Locator::HOST, port || Default::Locator::PORT]], Default::Locator::API
+      super :locator, [[host || Default::Locator::host, port || Default::Locator::port]], Default::Locator::API
     end
   end
 
@@ -394,6 +393,12 @@ module Cocaine
           options[:endpoint] = endpoint
         end
       end.parse!
+
+      Cocaine::LOG.debug "Options: #{options}"
+      Default::Locator::host, sep, Default::Locator::port = options[:locator].rpartition(':')
+      Default::Locator::port = Default::Locator::port.to_i
+
+      Cocaine::LOG.debug "Setting default Locator endpoint to: #{Default::Locator::host}:#{Default::Locator::port}"
       return Worker.new(options[:app], options[:uuid], options[:endpoint])
     end
   end
