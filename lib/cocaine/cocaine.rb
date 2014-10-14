@@ -418,21 +418,21 @@ module Cocaine
 
             env = Hash[*headers.flatten]
             parsed_url = URI.parse("http://#{env['Host']}#{url}")
-            default_hostname = parsed_url.hostname  || 'localhost'
-            default_port =  parsed_url.port || '80'
+            default_host = parsed_url.hostname  || 'localhost'
+            default_port = parsed_url.port      || '80'
 
             # noinspection RubyStringKeysInHashInspection
             env.update(
                 {
                     'GATEWAY_INTERFACE' => 'CGI/1.1',
-                    'PATH_INFO'         => parsed_url.path || '',
+                    'PATH_INFO'         => parsed_url.path  || '',
                     'QUERY_STRING'      => parsed_url.query || '',
                     'REMOTE_ADDR'       => '::1',
                     'REMOTE_HOST'       => 'localhost',
                     'REQUEST_METHOD'    => method,
                     'REQUEST_URI'       => url,
                     'SCRIPT_NAME'       => '',
-                    'SERVER_NAME'       => default_hostname,
+                    'SERVER_NAME'       => default_host,
                     'SERVER_PORT'       => default_port.to_s,
                     'SERVER_PROTOCOL'   => "HTTP/#{version}",
                     'rack.version'      => [1, 5],
