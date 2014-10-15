@@ -412,6 +412,12 @@ module Cocaine
       end.parse!
 
       Cocaine::LOG.debug "Options: #{options}"
+      if options.empty? or options.any? { |option, value| value.nil? }
+        Cocaine::LOG.error "Some options aren't specified, but should be. "\
+        "Probably, you're trying to start your application manually. Try to restart your app using Cocaine."
+        exit 1
+      end
+
       Default::Locator.host, sep, Default::Locator.port = options[:locator].rpartition(':')
       Default::Locator.port = Default::Locator::port.to_i
 
