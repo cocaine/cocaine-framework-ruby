@@ -1,4 +1,4 @@
-#!/usr/bin/env bundle exec
+#!/usr/bin/env ruby
 
 require 'cocaine'
 
