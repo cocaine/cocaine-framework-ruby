@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.description = 'Cocaine Framework is a framework for simplifying development both server-side and client-side
 applications.'
 
-  s.required_ruby_version = '>= 2.0'
+  s.required_ruby_version = '>= 1.9'
   s.add_development_dependency 'rspec', '~> 3.1'
 
   s.add_runtime_dependency 'msgpack', '~> 0.5'
