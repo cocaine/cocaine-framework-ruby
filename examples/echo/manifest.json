@@ -1,6 +1,4 @@
 {
     "slave": "echo.rb",
-    "environment": {
-        "GEM_HOME": "/Users/esafronov/.rvm/gems/ruby-2.0.0-p247"
-    }
+    "environment": {}
 }
