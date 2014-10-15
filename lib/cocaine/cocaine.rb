@@ -7,7 +7,8 @@ require 'celluloid'
 require 'celluloid/io'
 
 module Cocaine
-  # For dynamic method creation. [Detail].
+  # [Detail]
+  # For dynamic method creation.
   class Meta
     def metaclass
       class << self
