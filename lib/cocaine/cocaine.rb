@@ -52,7 +52,6 @@ module Cocaine
               }
           ]
       }
-      ERROR_CODE = 1
     end
   end
 
@@ -91,18 +90,18 @@ module Cocaine
 
       @tree = Hash.new
       tree.each do |id, (method, txtree, rxtree)|
-        @tree[id] = txtree
+        @tree[id] = [method.to_sym, txtree]
       end
     end
 
     def push(id, payload)
-      txtree = @tree[id]
+      method, txtree = @tree[id]
       if txtree && txtree.empty?
         # Todo: Close.
         LOG.debug "Closing RX channel #{self}"
       end
 
-      @queue << [id, payload]
+      @queue << [method, payload]
     end
   end
 
@@ -252,7 +251,7 @@ module Cocaine
       locator = Locator.new host, port
       tx, rx = locator.resolve name
       id, payload = rx.recv
-      if id == Default::Locator::ERROR_CODE
+      if id == :error
         raise ServiceError.new payload
       end
 
@@ -435,7 +434,7 @@ module Cocaine
         Cocaine::LOG.debug "After receive: '#{{:id => id, :payload => payload}}'"
 
         case id
-          when Cocaine::RPC::CHUNK
+          when :write
             method, url, version, headers, body = MessagePack::unpack payload
             Cocaine::LOG.debug "After unpack: '#{id}, #{[method, url, version, headers, body]}'"
 
@@ -481,8 +480,8 @@ module Cocaine
             end
 
             body.close if body.respond_to?(:close)
-          when Cocaine::RPC::ERROR
-          when Cocaine::RPC::CHOKE
+          when :error
+          when :choke
           else
             # Type code here.
         end

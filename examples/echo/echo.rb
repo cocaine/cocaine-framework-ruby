@@ -8,10 +8,10 @@ worker.on :ping do |res, req|
   Cocaine::LOG.debug 'Before read'
   id, msg = req.recv
   case id
-    when Cocaine::RPC::CHUNK
+    when :write
       Cocaine::LOG.debug "After read: '#{id}, #{msg}'"
       res.write msg
-    when Cocaine::RPC::ERROR
+    when :error
       Cocaine::LOG.debug 'Error event'
     else
       Cocaine::LOG.debug 'Unknown event'

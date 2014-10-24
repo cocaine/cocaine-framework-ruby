@@ -19,7 +19,7 @@ server.mount_proc '/' do |req, res|
 
   id, payload = rx.recv
   case id
-    when 0
+    when :write
       code, headers = MessagePack::unpack payload[0]
       Cocaine::LOG.debug "#{id}, #{code} :: #{headers}"
       id, body = rx.recv
@@ -32,10 +32,10 @@ server.mount_proc '/' do |req, res|
       end
 
       res.body = body
-    when 1
+    when :error
       errno, reason = payload
       res.body = reason
-    when 2
+    when :choke
       res.body = 'EOF'
     else
       res.body = 'Error'

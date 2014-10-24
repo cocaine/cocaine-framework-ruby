@@ -1,4 +1,4 @@
 {
-    "slave": "/cocaine/http.rb",
+    "slave": "http.rb",
     "environment": {}
 }
