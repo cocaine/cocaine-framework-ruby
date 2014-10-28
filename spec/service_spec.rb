@@ -43,15 +43,18 @@ describe 'Echo' do
     echo = Cocaine::Service.new :echo
     tx, rx = echo.enqueue :ping
     tx.write 'le message'
-    message = rx.recv
-    expect(message == 'le message')
+    id, message = rx.recv
+    expect(id).to eq :write
+    expect(message).to eq ['le message']
+    Cocaine::LOG.debug "Message: #{id}, #{message}"
   end
 
   it 'should return error on invalid event' do
     echo = Cocaine::Service.new :echo
     tx, rx = echo.enqueue :invalid
     id, message = rx.recv
-    expect(1 == id)
-    expect('le message' == message)
+    expect(id).to eq :error
+    expect(message).not_to eq ['le message']
+    Cocaine::LOG.debug "Message: #{id}, #{message}"
   end
 end
