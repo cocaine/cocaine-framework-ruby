@@ -108,6 +108,13 @@ module Cocaine
 
       @queue << [method, payload]
     end
+
+    def error(errno, reason)
+      @queue << [:error, [errno, reason]]
+
+      LOG.debug "Closing RX channel #{self} due to error: [#{errno}] #{reason}"
+      @close.call @session
+    end
   end
 
   # [Detail]
@@ -204,6 +211,9 @@ module Cocaine
       async.run
     end
 
+    protected
+    def reinitialize; end
+
     private
     def run
       LOG.debug "Service '#{@name}' is running"
@@ -213,6 +223,12 @@ module Cocaine
         unpacker.feed_each(data) do |decoded|
           async.received *decoded
         end
+      end
+    rescue EOFError => err
+      LOG.warn "Service '#{@name}' has lost connection with the Cloud"
+      @socket = nil
+      @sessions.each do |session, (tx, rx)|
+        rx.error 1, err.message
       end
     end
 
@@ -227,6 +243,8 @@ module Cocaine
     end
 
     def invoke(id, *args)
+      reinitialize if @socket.nil?
+
       method, txtree, rxtree = @dispatch[id]
       LOG.debug "Invoking #{@name}[#{id}=#{method}] with #{args}"
 
@@ -235,13 +253,11 @@ module Cocaine
         @sessions.delete session
       end
 
-      @sessions[@counter] = [txchan, rxchan.tx]
-
       LOG.debug "<- [#{@counter}, #{id}, #{args}]"
       message = MessagePack.pack([@counter, id, args])
-      @counter += 1
-
       @socket.write message
+      @sessions[@counter] = [txchan, rxchan.tx]
+      @counter += 1
       return txchan, rxchan.rx
     end
   end
@@ -257,6 +273,8 @@ module Cocaine
   # Service class. All you need is name and (optionally) locator endpoint.
   class Service < DefinedService
     def initialize(name, host=nil, port=nil)
+      @options = { host: host, port: port }
+
       locator = Locator.new host, port
       tx, rx = locator.resolve name
       id, payload = rx.recv
@@ -266,6 +284,11 @@ module Cocaine
 
       endpoints, version, dispatch = payload
       super name, endpoints, dispatch
+    end
+
+    protected
+    def reinitialize
+      initialize @name, @options[:host], @options[:port]
     end
   end
 
