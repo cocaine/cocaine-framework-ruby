@@ -75,7 +75,9 @@ module Cocaine
   end
 
   # [API]
-  # Read-only part for shared reader state.
+  # Read-only part for reader shared state.
+  # Allows to receive unpacked objects from the channel.
+  # Returns tuple with message id and payload.
   class RxMailbox < Mailbox
     def recv(timeout=30.0)
       @queue.receive timeout
@@ -83,7 +85,7 @@ module Cocaine
   end
 
   # [Detail]
-  # Write-only part for shared reader state.
+  # Write-only part for reader shared state.
   class TxMailbox < Mailbox
     def initialize(queue, tree, session, &block)
       super queue
@@ -109,7 +111,7 @@ module Cocaine
   end
 
   # [Detail]
-  # Shared reader state, that acts like channel. Need for channel splitting between the library and a user.
+  # Reader shared state, that acts like channel. Need for channel splitting between the library and a user.
   class RxChannel
     attr_reader :tx, :rx
 
@@ -166,7 +168,7 @@ module Cocaine
   class ServiceError < IOError
   end
 
-  # [Detail]
+  # [API]
   # Service actor, which can define itself via its dispatch tree.
   class DefinedService < Meta
     include Celluloid::IO
