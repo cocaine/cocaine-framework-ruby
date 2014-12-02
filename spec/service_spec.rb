@@ -9,6 +9,11 @@ describe 'Locator' do
     Cocaine::Locator.new
   end
 
+  it 'should return proper name' do
+    locator = Cocaine::Locator.new
+    expect(locator.name).to eq :locator
+  end
+
   it 'should connect to the specified endpoint' do
     Cocaine::Locator.new 'localhost', 10053
   end
@@ -39,6 +44,16 @@ describe 'Service' do
 end
 
 describe 'Echo' do
+  it 'should return proper symbol name' do
+    echo = Cocaine::Service.new :echo
+    expect(echo.name).to eq :echo
+  end
+
+  it 'should return proper string name' do
+    echo = Cocaine::Service.new 'echo'
+    expect(echo.name).to eq 'echo'
+  end
+
   it 'should responds' do
     echo = Cocaine::Service.new :echo
     tx, rx = echo.enqueue :ping

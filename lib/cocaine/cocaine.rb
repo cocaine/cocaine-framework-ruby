@@ -171,10 +171,11 @@ module Cocaine
   class DefinedService < Meta
     include Celluloid::IO
 
+    attr_reader :name
+
     def initialize(name, endpoints, dispatch)
       @name = name
       @dispatch = dispatch
-
       @counter = 1
       @sessions = Hash.new
 
