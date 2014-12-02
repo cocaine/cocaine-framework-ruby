@@ -163,6 +163,9 @@ module Cocaine
     end
   end
 
+  class ServiceError < IOError
+  end
+
   # [Detail]
   # Service actor, which can define itself via its dispatch tree.
   class DefinedService < Meta
@@ -245,9 +248,6 @@ module Cocaine
     def initialize(host=nil, port=nil)
       super :locator, [[host || Default::Locator.host, port || Default::Locator.port]], Default::Locator::API
     end
-  end
-
-  class ServiceError < IOError
   end
 
   # [API]
