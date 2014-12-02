@@ -85,20 +85,23 @@ module Cocaine
   # [Detail]
   # Write-only part for shared reader state.
   class TxMailbox < Mailbox
-    def initialize(queue, tree)
+    def initialize(queue, tree, session, &block)
       super queue
 
       @tree = Hash.new
       tree.each do |id, (method, txtree, rxtree)|
         @tree[id] = [method.to_sym, txtree]
       end
+
+      @session = session
+      @close = block
     end
 
     def push(id, payload)
       method, txtree = @tree[id]
       if txtree && txtree.empty?
-        # Todo: Close.
         LOG.debug "Closing RX channel #{self}"
+        @close.call @session
       end
 
       @queue << [method, payload]
@@ -110,9 +113,9 @@ module Cocaine
   class RxChannel
     attr_reader :tx, :rx
 
-    def initialize(tree)
+    def initialize(tree, session, &block)
       queue = Celluloid::Mailbox.new
-      @tx = TxMailbox.new queue, tree
+      @tx = TxMailbox.new queue, tree, session, &block
       @rx = RxMailbox.new queue
     end
   end
@@ -222,7 +225,10 @@ module Cocaine
       LOG.debug "Invoking #{@name}[#{id}=#{method}] with #{args}"
 
       txchan = TxChannel.new txtree, @counter, @socket
-      rxchan = RxChannel.new rxtree
+      rxchan = RxChannel.new rxtree, @counter do |session|
+        @sessions.delete session
+      end
+
       @sessions[@counter] = [txchan, rxchan.tx]
 
       LOG.debug "<- [#{@counter}, #{id}, #{args}]"
@@ -351,7 +357,9 @@ module Cocaine
     def invoke(session, event)
       actor = @actors[event]
       txchan = TxChannel.new RPC::TXTREE, session, @socket
-      rxchan = RxChannel.new RPC::RXTREE
+      rxchan = RxChannel.new RPC::RXTREE, session do |session_|
+        @sessions.delete session_
+      end
 
       if actor
         @sessions[session] = [txchan, rxchan.tx]
