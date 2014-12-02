@@ -281,6 +281,7 @@ module Cocaine
       if id == :error
         raise ServiceError.new payload
       end
+      locator.terminate
 
       endpoints, version, dispatch = payload
       super name, endpoints, dispatch
