@@ -14,7 +14,7 @@ def stage(prompt)
   return result
 rescue Exception => err
   puts "\e[A\r[#{' FAIL '.color :red}] #{prompt}: #{err.to_s.color :red}"
-  raise err
+  exit(1)
 end
 
 module CocaineTools
@@ -50,19 +50,18 @@ module CocaineTools
       end
     end
 
-    # noinspection RubyResolve
     def self.restart(app, profile)
       node = stage 'Connecting to the Cocaine' do
         Cocaine::Service.new :node
       end
 
       stage "Stopping application '#{app}'" do
-        _, rx = node.pause_app app
+        tx, rx = node.pause_app app
         [nil, rx.recv]
       end
 
       stage "Starting application '#{app}' with profile '#{profile}'" do
-        _, rx = node.start_app app, profile
+        tx, rx = node.start_app app, profile
         [nil, rx.recv]
       end
     end
@@ -77,7 +76,7 @@ class App < Thor
     end
 
     stage 'Fetching app list' do
-      _, rx = storage.find :manifests, [:app]
+      tx, rx = storage.find :manifests, [:app]
       [nil, rx.recv]
     end
   end
@@ -105,7 +104,7 @@ class Profile < Thor
     end
 
     stage 'Fetching profile list' do
-      _, rx = storage.find :profiles, [:profile]
+      tx, rx = storage.find :profiles, [:profile]
       [nil, rx.recv]
     end
   end
