@@ -109,6 +109,53 @@ class Profile < Thor
     end
   end
 
+  desc 'new NAME [--force] [--empty]', 'create a new profile with given NAME and upload it after editing in interactive editor'
+  option :force, :type => :boolean, :default => false
+  option :empty, :type => :boolean
+  def new(name)
+    storage = stage 'Connect to the Cocaine' do
+      Cocaine::Service.new :storage
+    end
+
+    unless options[:force]
+      stage "Check profile '#{name}' existence" do
+        tx, rx = storage.find :profiles, [:profile]
+        id, list = rx.recv
+        case id
+          when :value
+            if list[0].include? name
+              raise 'found'
+            end
+          else
+            raise 'unable to fetch profile list'
+        end
+
+        [nil, 'not found']
+      end
+    end
+
+    if options[:empty]
+      stage "Upload empty profile '#{name}'" do
+        content = MessagePack::pack({})
+        storage.write :profiles, name, content, [:profile]
+      end
+      exit(0)
+    end
+
+    file = Tempfile.new %w(profile .json)
+    File.open file.path, 'w' do |f|
+      f.write '{}'
+    end
+
+    system("vim #{file.path}")
+    content = JSON.parse File.open(file.path).readlines.join('\n')
+
+    stage "Upload profile '#{name}'" do
+      content = MessagePack::pack(content)
+      storage.write :profiles, name, content, [:profile]
+    end
+  end
+
   desc 'upload NAME PATH', 'upload NAME profile from PATH'
   def upload(name, path)
     content = stage "Reading profile from '#{path}'" do
