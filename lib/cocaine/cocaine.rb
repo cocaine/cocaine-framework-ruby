@@ -511,7 +511,7 @@ module Cocaine
             headers['X-Response-Took'] = Time.now - now
             res.write MessagePack.pack [code, headers.to_a]
             body.each do |item|
-              res.write(item)
+              res.write MessagePack.pack item
             end
 
             body.close if body.respond_to?(:close)
