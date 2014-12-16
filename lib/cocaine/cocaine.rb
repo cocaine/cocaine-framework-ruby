@@ -508,7 +508,7 @@ module Cocaine
 
             now                        = Time.now
             code, headers, body        = yield env
-            headers['X-Response-Took'] = Time.now - now
+            headers['X-Response-Took'] = "#{(Time.now - now) * 1e3} ms"
             res.write MessagePack.pack [code, headers.to_a]
             body.each do |item|
               res.write MessagePack.pack item
