@@ -54,7 +54,7 @@ describe 'Echo' do
     expect(echo.name).to eq 'echo'
   end
 
-  it 'should responds' do
+  it 'should respond' do
     echo = Cocaine::Service.new :echo
     tx, rx = echo.enqueue :ping
     tx.write 'le message'
