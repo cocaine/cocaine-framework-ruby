@@ -1,3 +1,3 @@
 module Cocaine
-  VERSION = '0.12.0-rc13'
+  VERSION = '0.12.0-rc14'
 end
