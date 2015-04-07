@@ -323,6 +323,13 @@ module Cocaine
       @endpoint = endpoint
       @actors = Hash.new
       @sessions = Hash.new
+
+      timeout = 60.0
+      @disown = after(60.0) do
+        LOG.debug "Terminating due to disown timer expiration (#{timeout} sec)"
+        # TODO: Hardcoded errno.
+        exit 1
+      end
     end
 
     def on(event, &block)
@@ -367,6 +374,7 @@ module Cocaine
       case id
         when RPC::HANDSHAKE
         when RPC::HEARTBEAT
+          @disown.reset
         when RPC::TERMINATE
           terminate *payload
         when RPC::INVOKE
