@@ -173,6 +173,38 @@ class Profile < Thor
     puts err
     exit(1)
   end
+
+  desc 'edit NAME', 'edit NAME runlist'
+  def edit(name)
+    storage = stage 'Connecting to the Cocaine' do
+      Cocaine::Service.new :storage
+    end
+
+    profile = stage "Reading '#{name}' profile" do
+      tx, rx = storage.read :profiles, name
+      id, profile = rx.recv
+      profile
+    end
+
+    file = Tempfile.new('profile')
+    begin
+      file.write JSON.generate MessagePack::unpack profile
+    ensure
+      file.close
+    end
+
+    begin
+      system ENV['EDITOR'] || 'vim', file.path
+      file.open
+      content = MessagePack.pack JSON.parse file.read
+      stage "Uploading '#{name}' profile" do
+        storage.write :profiles, name, content, [:profile]
+      end
+    ensure
+      file.close
+      file.unlink
+    end
+  end
 end
 
 class Runlist < Thor
