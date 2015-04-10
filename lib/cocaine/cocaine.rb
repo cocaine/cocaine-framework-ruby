@@ -56,7 +56,18 @@ module Cocaine
   end
 
   module RPC
-    HANDSHAKE, HEARTBEAT, TERMINATE, INVOKE, CHUNK, ERROR, CHOKE = (0..6).to_a
+    CONTROL_CHANNEL = 1
+
+    HANDSHAKE = 0
+
+    HEARTBEAT = 0
+    TERMINATE = 1
+
+    INVOKE = 0
+
+    CHUNK = 0
+    ERROR = 1
+    CHOKE = 2
 
     RXTREE = {
         CHUNK => ['write', nil, {}],
@@ -347,11 +358,11 @@ module Cocaine
     private
     def handshake
       LOG.debug '<- Handshake'
-      @socket.write MessagePack::pack([1, RPC::HANDSHAKE, [@uuid]])
+      @socket.write MessagePack::pack([RPC::CONTROL_CHANNEL, RPC::HANDSHAKE, [@uuid]])
     end
 
     def health
-      heartbeat = MessagePack::pack([1, RPC::HEARTBEAT, []])
+      heartbeat = MessagePack::pack([RPC::CONTROL_CHANNEL, RPC::HEARTBEAT, []])
       loop do
         LOG.debug '<- Heartbeat'
         @socket.write heartbeat
@@ -371,12 +382,38 @@ module Cocaine
 
     def received(session, id, payload)
       LOG.debug "-> Message(#{session}, #{id}, #{payload})"
+
+      max = @sessions.keys.max
+      if max and session >= max
+        LOG.debug "Dropping session #{session} as unexpected"
+        return
+      end
+
+      if session == RPC::CONTROL_CHANNEL
+        control session, id, payload
+      else
+        rpc session, id, payload
+      end
+    end
+
+    def control(session, id, payload)
+      LOG.debug "Processing control [#{session}, #{id}, #{payload}] message"
+
       case id
         when RPC::HANDSHAKE
         when RPC::HEARTBEAT
           @disown.reset
         when RPC::TERMINATE
           terminate *payload
+        else
+          LOG.warn "Received unknown message: [#{session}, #{id}, #{payload}]"
+      end
+    end
+
+    def rpc(session, id, payload)
+      LOG.debug "Processing RPC [#{session}, #{id}, #{payload}] message"
+
+      case id
         when RPC::INVOKE
           invoke session, *payload
         when RPC::CHUNK, RPC::ERROR
