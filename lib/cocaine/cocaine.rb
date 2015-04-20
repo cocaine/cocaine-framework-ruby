@@ -415,9 +415,25 @@ module Cocaine
     def rpc(session, id, payload)
       LOG.debug "Processing RPC [#{session}, #{id}, #{payload}] message"
 
+      channels = @sessions.keys
+      if channels.empty?
+        min = max = 1
+      else
+        min, max = channels.min, channels.max
+      end
+
+      if session < min
+        LOG.debug "Dropping session #{session} as unexpected"
+        return
+      end
+
+      if session > max
+        LOG.debug "Invoking new channel #{session}"
+        invoke session, *payload
+        return
+      end
+
       case id
-        when RPC::INVOKE
-          invoke session, *payload
         when RPC::CHUNK, RPC::ERROR
           push session, id, *payload
         when RPC::CHOKE
