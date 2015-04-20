@@ -392,12 +392,6 @@ module Cocaine
     def received(session, id, payload)
       LOG.debug "-> Message(#{session}, #{id}, #{payload})"
 
-      max = @sessions.keys.max
-      if max and session >= max
-        LOG.debug "Dropping session #{session} as unexpected"
-        return
-      end
-
       if session == RPC::CONTROL_CHANNEL
         control session, id, payload
       else
@@ -409,7 +403,6 @@ module Cocaine
       LOG.debug "Processing control [#{session}, #{id}, #{payload}] message"
 
       case id
-        when RPC::HANDSHAKE
         when RPC::HEARTBEAT
           @disown.reset
         when RPC::TERMINATE
