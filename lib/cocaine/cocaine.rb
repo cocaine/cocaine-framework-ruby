@@ -490,6 +490,10 @@ module Cocaine
         opts.on('--endpoint ENDPOINT', 'Worker endpoint') do |endpoint|
           options[:endpoint] = endpoint
         end
+
+        opts.on('--protocol VERSION', 'Worker protocol version') do |protocol|
+          options[:protocol] = protocol
+        end
       end.parse!
 
       Cocaine::LOG.debug "Options: #{options}"
@@ -499,10 +503,9 @@ module Cocaine
         exit 1
       end
 
-      Default::Locator.host, sep, Default::Locator.port = options[:locator].rpartition(':')
-      Default::Locator.port = Default::Locator::port.to_i
+      Default::Locator.endpoints = options[:locator].split(',')
 
-      Cocaine::LOG.debug "Setting default Locator endpoint to '#{Default::Locator.host}:#{Default::Locator.port}'"
+      Cocaine::LOG.debug "Setting default Locator endpoints to #{Default::Locator.endpoints}"
       return Worker.new(options[:app], options[:uuid], options[:endpoint])
     end
   end
