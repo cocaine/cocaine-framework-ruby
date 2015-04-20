@@ -39,7 +39,15 @@ module Cocaine
         @port = port
       end
 
-      module_function :host, :host=, :port, :port=
+      def endpoints
+        @endpoints || ['::', 10053]
+      end
+
+      def endpoints=(endpoints)
+        @endpoints = endpoints
+      end
+
+      module_function :host, :host=, :port, :port=, :endpoints, :endpoints=
 
       API = {
           0 => [
