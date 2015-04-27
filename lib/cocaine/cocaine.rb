@@ -474,6 +474,7 @@ module Cocaine
 
     def terminate(errno, reason)
       LOG.warn "Terminating [#{errno}]: #{reason}"
+      @socket.write MessagePack::pack([RPC::CONTROL_CHANNEL, RPC::TERMINATE, [errno, reason]])
       exit errno
     end
 
