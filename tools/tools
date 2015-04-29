@@ -242,7 +242,7 @@ class Runlist < Thor
 end
 
 class CocaineToolsCLI < Thor
-  desc 'info NAME', 'Fetch NAME app info'
+  desc 'info APP', 'Fetch APP info'
   def info(app)
     service = Cocaine::Service.new app
     loop do
@@ -263,8 +263,31 @@ class CocaineToolsCLI < Thor
   subcommand :runlist, Runlist
 end
 
-# Suppress internal loggers.
+# Select the verbosity level.
 Celluloid.logger = nil
 Cocaine::LOG.level = Logger::ERROR
 
-CocaineToolsCLI.start(ARGV)
+ARGV.select do |v|
+  /^-(?<level>v+)$/ =~ v
+  if level
+    case level.count('v')
+      when 1
+        Celluloid.logger = nil
+        Cocaine::LOG.level = Logger::WARN
+      when 2
+        Celluloid.logger = nil
+        Cocaine::LOG.level = Logger::INFO
+      when 3
+        Celluloid.logger = nil
+        Cocaine::LOG.level = Logger::DEBUG
+      else
+        Cocaine::LOG.level = Logger::DEBUG
+    end
+  end
+end
+
+ARGV.reject! do |v|
+  v =~ /^-(?<level>v+)$/
+end
+
+CocaineToolsCLI.start
