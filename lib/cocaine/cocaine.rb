@@ -347,10 +347,11 @@ module Cocaine
       @sessions = Hash.new
 
       timeout = 60.0
-      @disown = after(60.0) do
-        LOG.debug "Terminating due to disown timer expiration (#{timeout} sec)"
-        # TODO: Hardcoded errno.
-        exit 1
+
+      @disown = after timeout do
+        LOG.fatal "Terminating due to disown timer expiration (#{timeout} sec)"
+
+        exit Errno.ETIMEDOUT
       end
     end
 
