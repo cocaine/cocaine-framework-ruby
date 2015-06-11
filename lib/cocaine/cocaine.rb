@@ -219,11 +219,9 @@ module Cocaine
         end
       end
 
-      # TODO: I can check for common single-shot protocol here.
       dispatch.each do |id, (method, txtree, rxtree)|
         LOG.debug "Defined '#{method}' method for service #{self}"
         self.metaclass.send(:define_method, method) do |*args|
-          LOG.debug "Invoking #{@name}.#{method}(#{args})"
           return invoke(id, *args)
         end
       end
