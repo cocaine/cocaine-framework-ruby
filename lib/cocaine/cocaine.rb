@@ -64,14 +64,53 @@ module Cocaine
   end
 
   module RPC
-    CONTROL_CHANNEL = 1
+    module Version1
+      CONTROL_CHANNEL = 1
 
-    HANDSHAKE = 0
+      class Dispatcher
+        def handshake(uuid)
+          [CONTROL_CHANNEL, 0, [@uuid]]
+        end
 
-    HEARTBEAT = 0
-    TERMINATE = 1
+        def heartbeat
+          [CONTROL_CHANNEL, 1, []]
+        end
 
-    INVOKE = 0
+        def terminate(errno, reason)
+          [CONTROL_CHANNEL, 2, [errno, reason]]
+        end
+
+        def process(span, id)
+          case id
+            when 1
+              :heartbeat
+            when 2
+              :terminate
+            when 3
+              :invoke
+            when 4
+              :chunk
+            when 5
+              :error
+            when 6
+              :choke
+            else
+              :unknown
+          end
+        end
+      end
+    end
+
+    module Version2
+    end
+
+    def self.dispatcher(version)
+      if version == 0
+        Version1::Dispatcher.new
+      end
+
+      raise Exception.new 'unsupported version number'
+    end
 
     CHUNK = 0
     ERROR = 1
@@ -203,7 +242,7 @@ module Cocaine
 
     def initialize(name, endpoints, dispatch)
       @name = name
-      @dispatch = dispatch
+      @framing = dispatch
       @counter = 1
       @sessions = Hash.new
 
@@ -264,7 +303,7 @@ module Cocaine
     def invoke(id, *args)
       reinitialize if @socket.nil?
 
-      method, txtree, rxtree = @dispatch[id]
+      method, txtree, rxtree = @framing[id]
       LOG.debug "Invoking #{@name} '#{method}' method with #{id} id and #{args} args"
 
       txchan = TxChannel.new txtree, @counter, @socket
@@ -343,6 +382,8 @@ module Cocaine
       @uuid     = options[:uuid]
       @endpoint = options[:endpoint]
 
+      @framing = RPC::dispatcher options[:protocol]
+
       @actors = Hash.new
       @sessions = Hash.new
 
@@ -361,7 +402,8 @@ module Cocaine
 
     def run
       LOG.debug "Starting worker '#{@app}' with uuid '#{@uuid}' at '#{@endpoint}'"
-      @socket = UNIXSocket.open(@endpoint)
+
+      @socket = UNIXSocket.open @endpoint
       async.handshake
       async.health
       async.serve
@@ -370,13 +412,16 @@ module Cocaine
     private
     def handshake
       LOG.debug '<- Handshake'
-      @socket.write MessagePack::pack([RPC::CONTROL_CHANNEL, RPC::HANDSHAKE, [@uuid]])
+
+      @socket.write MessagePack::pack @framing.handshake
     end
 
     def health
-      heartbeat = MessagePack::pack([RPC::CONTROL_CHANNEL, RPC::HEARTBEAT, []])
+      heartbeat = MessagePack::pack @framing.heartbeat
+
       loop do
         LOG.debug '<- Heartbeat'
+
         @socket.write heartbeat
         sleep 5.0
       end
@@ -384,6 +429,7 @@ module Cocaine
 
     def serve
       unpacker = MessagePack::Unpacker.new
+
       loop do
         data = @socket.readpartial 4096
         unpacker.feed_each data do |decoded|
@@ -392,62 +438,31 @@ module Cocaine
       end
     end
 
-    def received(session, id, payload)
-      LOG.debug "-> Message(#{session}, #{id}, #{payload})"
+    def received(span, id, payload)
+      LOG.debug "-> Message(#{span}, #{id}, #{payload})"
 
-      if session == RPC::CONTROL_CHANNEL
-        control session, id, payload
-      else
-        rpc session, id, payload
-      end
-    end
-
-    def control(session, id, payload)
-      LOG.debug "Processing control [#{session}, #{id}, #{payload}] message"
-
-      case id
-        when RPC::HEARTBEAT
-          @disown.reset
-        when RPC::TERMINATE
-          terminate *payload
-        else
-          LOG.warn "Received unknown message: [#{session}, #{id}, #{payload}]"
-      end
-    end
-
-    def rpc(session, id, payload)
-      LOG.debug "Processing RPC [#{session}, #{id}, #{payload}] message"
-
-      channels = @sessions.keys
-      if channels.empty?
-        min = max = 1
-      else
-        min, max = channels.min, channels.max
-      end
-
-      if session < min
-        LOG.debug "Dropping session #{session} as unexpected"
-        return
-      end
-
-      if session > max
-        LOG.debug "Invoking new channel #{session}"
-        invoke session, *payload
-        return
-      end
-
-      case id
-        when RPC::CHUNK, RPC::ERROR
-          push session, id, *payload
-        when RPC::CHOKE
-          LOG.debug "Closing #{session} session"
-          @sessions.delete session
-        else
-          LOG.warn "Received unknown message: [#{session}, #{id}, #{payload}]"
+      @framing.process span, id do event
+        case event
+          when :heartbeat
+            @disown.reset
+          when :terminate
+            terminate *payload
+          when :invoke
+            invoke span, *payload
+          when :chunk
+            push span, id, *payload
+          when :error, :choke
+            push span, id, *payload
+            revoke span
+          else
+            LOG.warn "Received unknown message: [#{span}, #{id}, #{payload}]"
+        end
       end
     end
 
     def invoke(session, event)
+      LOG.debug "Invoking new #{session} channel with #{event} event"
+
       actor = @actors[event]
       txchan = TxChannel.new RPC::TXTREE, session, @socket
       rxchan = RxChannel.new RPC::RXTREE, session do |session_|
@@ -475,9 +490,15 @@ module Cocaine
       end
     end
 
+    def revoke(span)
+      LOG.debug "Closing #{span} channel"
+      @sessions.delete span
+    end
+
     def terminate(errno, reason)
       LOG.warn "Terminating [#{errno}]: #{reason}"
-      @socket.write MessagePack::pack([RPC::CONTROL_CHANNEL, RPC::TERMINATE, [errno, reason]])
+
+      @socket.write MessagePack::pack @framing.terminate errno, reason
       exit errno
     end
 
@@ -492,6 +513,8 @@ module Cocaine
   class WorkerFactory
     def self.create
       options = {}
+      options[:protocol] = 0
+
       OptionParser.new do |opts|
         opts.banner = 'Usage: <worker.rb> --app NAME --locator ADDRESS --uuid UUID --endpoint ENDPOINT'
 
@@ -511,7 +534,7 @@ module Cocaine
           options[:endpoint] = endpoint
         end
 
-        opts.on('--protocol VERSION', 'Worker protocol version') do |protocol|
+        opts.on('--protocol VERSION', Integer, 'Worker protocol version') do |protocol|
           options[:protocol] = protocol
         end
 
