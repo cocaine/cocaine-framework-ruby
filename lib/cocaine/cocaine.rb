@@ -235,6 +235,7 @@ module Cocaine
     private
     def run
       LOG.debug "Service '#{@name}' is running"
+
       unpacker = MessagePack::Unpacker.new
       loop do
         data = @socket.readpartial(4096)
