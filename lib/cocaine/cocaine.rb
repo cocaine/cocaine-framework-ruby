@@ -67,9 +67,13 @@ module Cocaine
     module Version1
       CONTROL_CHANNEL = 1
 
+      module Messages
+        HANDSHAKE, HEARTBEAT, TERMINATE, INVOKE, CHUNK, ERROR, CHOKE = (0..6).to_a
+      end
+
       class Dispatcher
         def handshake(uuid)
-          [CONTROL_CHANNEL, 0, [@uuid]]
+          [CONTROL_CHANNEL, 0, [uuid]]
         end
 
         def heartbeat
@@ -105,16 +109,17 @@ module Cocaine
     end
 
     def self.dispatcher(version)
-      if version == 0
-        Version1::Dispatcher.new
+      case version
+        when 0
+          Version1::Dispatcher.new
+        else
+          raise Exception.new 'unsupported version number'
       end
-
-      raise Exception.new 'unsupported version number'
     end
 
-    CHUNK = 0
-    ERROR = 1
-    CHOKE = 2
+    CHUNK = 4
+    ERROR = 5
+    CHOKE = 6
 
     RXTREE = {
         CHUNK => ['write', nil, {}],
@@ -413,7 +418,7 @@ module Cocaine
     def handshake
       LOG.debug '<- Handshake'
 
-      @socket.write MessagePack::pack @framing.handshake
+      @socket.write MessagePack::pack @framing.handshake @uuid
     end
 
     def health
@@ -438,25 +443,26 @@ module Cocaine
       end
     end
 
-    def received(span, id, payload)
-      LOG.debug "-> Message(#{span}, #{id}, #{payload})"
+    def received(span, id, payload, *extra)
+      LOG.debug "-> Message(#{span}, #{id}, #{payload}, #{extra})"
 
-      @framing.process span, id do event
-        case event
-          when :heartbeat
-            @disown.reset
-          when :terminate
-            terminate *payload
-          when :invoke
-            invoke span, *payload
-          when :chunk
-            push span, id, *payload
-          when :error, :choke
-            push span, id, *payload
-            revoke span
-          else
-            LOG.warn "Received unknown message: [#{span}, #{id}, #{payload}]"
-        end
+      case @framing.process span, id
+        when :heartbeat
+          @disown.reset
+        when :terminate
+          terminate *payload
+        when :invoke
+          invoke span, *payload
+        when :chunk
+          push span, id, *payload
+        when :error
+          push span, id, *payload
+          revoke span
+        when :choke
+          push span, id, []
+          revoke span
+        else
+          LOG.warn "Received unknown message: [#{span}, #{id}, #{payload}]"
       end
     end
 

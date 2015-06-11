@@ -7,9 +7,10 @@ worker = Cocaine::WorkerFactory.create
 worker.on :ping do |res, req|
   Cocaine::LOG.debug 'Before read'
   id, msg = req.recv
+  Cocaine::LOG.debug "After read: '#{id}, #{msg}'"
+
   case id
-    when :write
-      Cocaine::LOG.debug "After read: '#{id}, #{msg}'"
+  when :write
       res.write msg
     when :error
       Cocaine::LOG.debug 'Error event'
