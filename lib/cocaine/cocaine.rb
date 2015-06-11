@@ -524,7 +524,7 @@ module Cocaine
       if options.empty? or options.any? { |option, value| value.nil? }
         Cocaine::LOG.error "Some options aren't specified, but should be. "\
         "Probably, you're trying to start your application manually. Try to restart your app using Cocaine."
-        exit 1
+        exit Errno::EINVAL
       end
 
       Default::Locator.endpoints = options[:locator].split(',')
