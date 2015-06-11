@@ -284,18 +284,20 @@ module Cocaine
 
   # [API]
   class Locator < DefinedService
-    def initialize(host=nil, port=nil)
-      super :locator, [[host || Default::Locator.host, port || Default::Locator.port]], Default::Locator::API
+    def initialize(endpoints = nil)
+      endpoints ||= [[Default::Locator.host, Default::Locator.port]]
+
+      super :locator, endpoints, Default::Locator::API
     end
   end
 
   # [API]
-  # Service class. All you need is name and (optionally) locator endpoint.
+  # Service class. All you need is name and (optionally) locator endpoints.
   class Service < DefinedService
-    def initialize(name, host=nil, port=nil)
-      @options = { host: host, port: port }
+    def initialize(name, endpoints = nil)
+      @location = endpoints
 
-      locator = Locator.new host, port
+      locator = Locator.new @location
       tx, rx = locator.resolve name
       id, payload = rx.recv
       if id == :error
@@ -309,7 +311,7 @@ module Cocaine
 
     protected
     def reinitialize
-      initialize @name, @options[:host], @options[:port]
+      initialize @name
     end
   end
 
