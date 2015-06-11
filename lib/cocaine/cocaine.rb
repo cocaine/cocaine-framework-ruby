@@ -251,13 +251,13 @@ module Cocaine
       end
     end
 
-    def received(session, id, payload)
-      LOG.debug "-> [#{session}, #{id}, #{payload}]"
-      tx, rx = @sessions[session]
+    def received(span, id, payload, *extra)
+      LOG.debug "-> [#{span}, #{id}, #{payload}, #{extra}]"
+      tx, rx = @sessions[span]
       if rx
         rx.push id, payload
       else
-        LOG.warn "Received message to closed session: [#{session}, #{id}, #{payload}]"
+        LOG.warn "Received message to closed session: [#{span}, #{id}, #{payload}]"
       end
     end
 
