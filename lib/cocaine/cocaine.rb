@@ -266,7 +266,7 @@ module Cocaine
       reinitialize if @socket.nil?
 
       method, txtree, rxtree = @dispatch[id]
-      LOG.debug "Invoking #{@name}[#{id}=#{method}] with #{args}"
+      LOG.debug "Invoking #{@name} '#{method}' method with #{id} id and #{args} args"
 
       txchan = TxChannel.new txtree, @counter, @socket
       rxchan = RxChannel.new rxtree, @counter do |session|
