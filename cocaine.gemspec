@@ -19,11 +19,11 @@ applications.'
 
   s.required_ruby_version = '>= 1.9'
 
-  s.add_development_dependency 'rspec', '~> 3.1'
-  s.add_development_dependency 'rake', '~> 10.0'
-  s.add_development_dependency 'bundler', '~> 1.7'
-
   s.add_runtime_dependency 'msgpack', '~> 0.5'
   s.add_runtime_dependency 'celluloid', '~> 0.16'
   s.add_runtime_dependency 'celluloid-io', '~> 0.16'
+
+  s.add_development_dependency 'rspec', '~> 3.2'
+  s.add_development_dependency 'rake', '~> 10.0'
+  s.add_development_dependency 'bundler', '~> 1.7'
 end
