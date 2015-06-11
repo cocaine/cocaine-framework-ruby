@@ -338,10 +338,11 @@ module Cocaine
     execute_block_on_receiver :on
     finalizer :finalize
 
-    def initialize(app, uuid, endpoint)
-      @app = app
-      @uuid = uuid
-      @endpoint = endpoint
+    def initialize(options)
+      @app      = options[:app]
+      @uuid     = options[:uuid]
+      @endpoint = options[:endpoint]
+
       @actors = Hash.new
       @sessions = Hash.new
 
@@ -529,7 +530,7 @@ module Cocaine
       Default::Locator.endpoints = options[:locator].split(',')
 
       Cocaine::LOG.debug "Setting default Locator endpoints to #{Default::Locator.endpoints}"
-      return Worker.new(options[:app], options[:uuid], options[:endpoint])
+      return Worker.new(options)
     end
   end
 
