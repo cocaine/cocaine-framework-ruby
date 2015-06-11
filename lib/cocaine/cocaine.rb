@@ -513,6 +513,11 @@ module Cocaine
         opts.on('--protocol VERSION', 'Worker protocol version') do |protocol|
           options[:protocol] = protocol
         end
+
+        opts.on_tail('--version', 'Show version the Framework version and exit') do
+          puts Cocaine::VERSION.join('.')
+          exit
+        end
       end.parse!
 
       Cocaine::LOG.debug "Options: #{options}"
