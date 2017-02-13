@@ -265,8 +265,8 @@ module Cocaine
 
       dispatch.each do |id, (method, txtree, rxtree)|
         LOG.debug "Defined '#{method}' method for service #{self}"
-        self.metaclass.send(:define_method, method) do |*args|
-          return invoke(id, *args)
+        self.metaclass.send(:define_method, method) do |*args, **headers|
+          return invoke(id, *args, **headers)
         end
       end
 
@@ -305,19 +305,24 @@ module Cocaine
       end
     end
 
-    def invoke(id, *args)
+    def invoke(id, *args, **headers)
       reinitialize if @socket.nil?
 
       method, txtree, rxtree = @framing[id]
-      LOG.debug "Invoking #{@name} '#{method}' method with #{id} id and #{args} args"
+      LOG.debug "Invoking #{@name} '#{method}' method with #{id} id and #{args} args with #{headers} headers"
 
       txchan = TxChannel.new txtree, @counter, @socket
       rxchan = RxChannel.new rxtree, @counter do |session|
         @sessions.delete session
       end
 
-      LOG.debug "<- [#{@counter}, #{id}, #{args}]"
-      message = MessagePack.pack([@counter, id, args])
+      hpack = []
+      headers.each do |name, value|
+        hpack.push [false, name, value]
+      end
+
+      LOG.debug "<- [#{@counter}, #{id}, #{args}, #{hpack}]"
+      message = MessagePack.pack([@counter, id, args, hpack])
       @socket.write message
       @sessions[@counter] = [txchan, rxchan.tx]
       @counter += 1

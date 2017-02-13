@@ -19,7 +19,7 @@ applications.'
 
   s.required_ruby_version = '>= 1.9'
 
-  s.add_runtime_dependency 'msgpack', '~> 0.5'
+  s.add_runtime_dependency 'msgpack', '~> 1.0'
   s.add_runtime_dependency 'celluloid', '~> 0.16'
   s.add_runtime_dependency 'celluloid-io', '~> 0.16'
 
